@@ -16,14 +16,21 @@ from muralis.utils.notify import send_notification
 class MuralisApp:
     """Main application class for Muralis wallpaper manager."""
 
-    def __init__(self, config_path: str, verbose: bool = False):
+    def __init__(
+        self,
+        config_path: str,
+        verbose: bool = False,
+        config_format: Optional[str] = None,
+    ):
         """Initialize Muralis application.
 
         Args:
             config_path: Path to configuration file
             verbose: Enable verbose logging
+            config_format: Force a configuration format (json/toml/yaml)
+                instead of taking it from the file's extension
         """
-        self.config = ConfigManager(config_path)
+        self.config = ConfigManager(config_path, format=config_format)
         self.storage = StorageManager(self.config)
         self.setter = get_wallpaper_setter()
         self.scheduler = SchedulerManager(self.config)

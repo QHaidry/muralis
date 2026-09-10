@@ -5,6 +5,7 @@
     "help": {
       "gui": "Launch the graphical user interface (same as 'muralis-gui')",
       "config": "Configuration file path (default: ~/.config/muralis/config.json)",
+      "config_format": "Configuration format: json, toml or yaml",
       "provider": "Override wallpaper provider for this run",
       "once": "Run one update cycle and exit",
       "set_daily": "Setup systemd timer for daily automatic updates",
@@ -17,6 +18,7 @@
       "get": "Get configuration value (e.g., --get general.provider)",
       "set": "Set configuration value (e.g., --set general.provider nasa)",
       "reset_config": "Reset configuration to factory defaults",
+      "convert_config": "Rewrite the configuration in another format (json, toml, yaml)",
       "check_keys": "Check API key status for all providers",
       "set_key": "Set API key for a provider (e.g., --set-key unsplash YOUR_KEY)",
       "remove_key": "Remove API key for a provider",
@@ -37,6 +39,7 @@
       "reset": "✓ Configuration reset to defaults",
       "exported": "✓ Configuration exported to {path}",
       "imported": "✓ Configuration imported from {path}",
+      "converted": "✓ Configuration converted to {path}",
       "set_image": "✓ Wallpaper set to {path}",
       "get_image": "✓ Wallpaper downloaded to {path} (not applied)"
     },
@@ -250,8 +253,10 @@
       "reset": "Reset to Defaults",
       "appearance": "Appearance",
       "theme": "Theme",
+      "config_format": "Config file format",
       "success_title": "Success",
       "saved": "Settings saved successfully!",
+      "format_changed": "Settings are now stored in {path}.\nRestart Muralis to use it everywhere.",
       "reset_title": "Reset Settings",
       "reset_confirm": "Are you sure you want to reset all settings to defaults?",
       "reset_done": "Settings reset to defaults!",
@@ -271,6 +276,7 @@
         "max_files": "Oldest files are removed beyond this limit.",
         "max_days": "Files older than this are removed.",
         "theme": "Color theme for the interface.",
+        "config_format": "The file format your settings are stored in.",
         "notifications": "Show a notification when the wallpaper changes."
       },
       "notifications": "Desktop notifications"

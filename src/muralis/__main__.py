@@ -6,6 +6,7 @@ import argparse
 
 from muralis.app import MuralisApp
 from muralis import __version__
+from muralis.config import ConfigValidationError, available_config_formats
 from muralis.context import config_path as app_config_path
 from muralis.i18n import t
 from muralis.providers import ALL_PROVIDERS
@@ -28,6 +29,12 @@ def parse_arguments():
         "--config",
         default=str(app_config_path()),
         help=t("cli.help.config"),
+    )
+
+    parser.add_argument(
+        "--config-format",
+        choices=available_config_formats(),
+        help=t("cli.help.config_format"),
     )
 
     parser.add_argument("-p", "--provider", choices=ALL_PROVIDERS, help=t("cli.help.provider"))
@@ -60,6 +67,13 @@ def parse_arguments():
     parser.add_argument("--set", nargs=2, metavar=("SECTION.KEY", "VALUE"), help=t("cli.help.set"))
 
     parser.add_argument("--reset-config", action="store_true", help=t("cli.help.reset_config"))
+
+    parser.add_argument(
+        "--convert-config",
+        metavar="FORMAT",
+        choices=available_config_formats(),
+        help=t("cli.help.convert_config"),
+    )
 
     # API key management commands
     parser.add_argument("--check-keys", action="store_true", help=t("cli.help.check_keys"))
@@ -113,6 +127,16 @@ def handle_config_commands(args, app):
             print(t("cli.ok.set", section=section, key=key, value=value))
         else:
             print(t("cli.err.format"), file=sys.stderr)
+        return True
+
+    # Convert the configuration to another format
+    if args.convert_config:
+        try:
+            new_path = app.config.convert(args.convert_config)
+        except ConfigValidationError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return True
+        print(t("cli.ok.converted", path=new_path))
         return True
 
     # Reset configuration to defaults
@@ -294,6 +318,7 @@ def main():
         or args.get
         or args.set
         or args.reset_config
+        or args.convert_config
         or args.check_keys
         or args.set_key
         or args.remove_key
@@ -303,7 +328,7 @@ def main():
         return 0
 
     # Create app for other commands
-    app = MuralisApp(args.config, verbose=args.verbose)
+    app = MuralisApp(args.config, verbose=args.verbose, config_format=args.config_format)
 
     # Handle configuration commands
     if handle_config_commands(args, app):

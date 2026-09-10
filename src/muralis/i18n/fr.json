@@ -5,6 +5,7 @@
     "help": {
       "gui": "Lancer l'interface graphique (identique à 'muralis-gui')",
       "config": "Chemin du fichier de configuration (défaut : ~/.config/muralis/config.json)",
+      "config_format": "Format de configuration : json, toml ou yaml",
       "provider": "Forcer le fournisseur pour cette exécution",
       "once": "Exécuter un cycle de mise à jour puis quitter",
       "set_daily": "Installer la minuterie systemd pour les mises à jour quotidiennes",
@@ -17,6 +18,7 @@
       "get": "Obtenir une valeur de configuration (ex. : --get general.provider)",
       "set": "Définir une valeur de configuration (ex. : --set general.provider nasa)",
       "reset_config": "Réinitialiser la configuration aux valeurs par défaut",
+      "convert_config": "Réécrire la configuration dans un autre format (json, toml, yaml)",
       "check_keys": "Vérifier l'état des clés API pour tous les fournisseurs",
       "set_key": "Définir une clé API pour un fournisseur (ex. : --set-key unsplash VOTRE_CLE)",
       "remove_key": "Supprimer la clé API d'un fournisseur",
@@ -37,6 +39,7 @@
       "reset": "✓ Configuration réinitialisée aux valeurs par défaut",
       "exported": "✓ Configuration exportée vers {path}",
       "imported": "✓ Configuration importée depuis {path}",
+      "converted": "✓ Configuration convertie vers {path}",
       "set_image": "✓ Fond d'écran défini : {path}",
       "get_image": "✓ Fond d'écran téléchargé dans {path} (non appliqué)"
     },
@@ -250,8 +253,10 @@
       "reset": "Réinitialiser",
       "appearance": "Apparence",
       "theme": "Thème",
+      "config_format": "Format du fichier de configuration",
       "success_title": "Succès",
       "saved": "Paramètres enregistrés avec succès !",
+      "format_changed": "Les paramètres sont désormais enregistrés dans {path}.\nRedémarrez Muralis pour l'appliquer partout.",
       "reset_title": "Réinitialiser les paramètres",
       "reset_confirm": "Voulez-vous vraiment réinitialiser tous les paramètres ?",
       "reset_done": "Paramètres réinitialisés aux valeurs par défaut !",
@@ -271,6 +276,7 @@
         "max_files": "Les fichiers les plus anciens sont supprimés au-delà de cette limite.",
         "max_days": "Les fichiers plus anciens que ce nombre de jours sont supprimés.",
         "theme": "Thème de couleurs de l'interface.",
+        "config_format": "Le format dans lequel vos paramètres sont enregistrés.",
         "notifications": "Afficher une notification lorsque le fond d'écran change."
       },
       "notifications": "Notifications"

@@ -32,6 +32,18 @@ class ConfigValidationError(Exception):
     """Raised when a value is not acceptable for its setting."""
 
 
+def available_config_formats() -> List[str]:
+    """The configuration formats this installation can both read and write.
+
+    Deliberately dynamic rather than a constant: TOML and YAML need optional
+    dependencies, so offering them as a choice when they cannot be used would
+    turn a clear "install this extra" message into a confusing failure.
+    """
+    from gesso.config import builtin_codecs
+
+    return [codec.name for codec in builtin_codecs() if codec.available()]
+
+
 #: ``1920x1080`` and friends.
 _RESOLUTION = r"^\d{3,4}x\d{3,4}$"
 #: ``HH:MM``, 24-hour.
@@ -369,6 +381,41 @@ class ConfigManager:
     def save(self):
         """Write the configuration to disk, atomically."""
         self._store.save()
+
+    def create_default(self):
+        """Reset every setting to its schema default and write it out."""
+        self._store.reset()
+        self._store.save()
+        print(t("cli.config.created", path=self.config_path))
+
+    # ------------------------------------------------------------------
+    # Format
+    # ------------------------------------------------------------------
+    @property
+    def format(self) -> str:
+        """The format of the file in use (``json``, ``toml`` or ``yaml``)."""
+        return self._store.format
+
+    def convert(self, fmt: str) -> Path:
+        """Rewrite the configuration in another format, and return its path.
+
+        The previous file is kept alongside as ``<name>.bak``, so changing your
+        mind is a rename rather than a lost configuration.
+        """
+        try:
+            new_path = self._store.convert_to(fmt)
+        except ConfigError as exc:
+            raise ConfigValidationError(str(exc)) from exc
+
+        # Re-key the instance cache: the manager now belongs to the new file,
+        # and asking for the old path must not hand back this same object.
+        for key, instance in list(type(self)._instances.items()):
+            if instance is self:
+                del type(self)._instances[key]
+        type(self)._instances[str(new_path)] = self
+
+        self.config_path = new_path
+        return new_path
 
     # ------------------------------------------------------------------
     # Validation

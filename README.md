@@ -80,9 +80,23 @@ instructions.
 
 ## Usage
 
-The configuration is stored (JSON) at `~/.config/muralis/config.json`. A
-legacy `config.ini` is migrated automatically on first launch. Uninstall-style
-checks and live edits in `~/.config/muralis/` are picked up on next run.
+The configuration is stored at `~/.config/muralis/config.json` by default. The
+format is a property of the file, not of its contents, so you can use JSON,
+TOML or YAML — whichever you prefer to read and edit:
+
+```bash
+muralis --config-format toml          # use config.toml from now on
+muralis --convert-config yaml         # rewrite the current file as YAML
+```
+
+Converting keeps the previous file as `config.json.bak`, and refuses to
+overwrite a file that is already there. TOML and YAML need an extra
+(`pip install "gesso-sdk[toml]"` or `[yaml]`); only installed formats are
+offered.
+
+A legacy `config.ini` is imported automatically on first launch and then
+deleted — INI is no longer written. Live edits in `~/.config/muralis/` are
+picked up on next run.
 
 ### Command line
 

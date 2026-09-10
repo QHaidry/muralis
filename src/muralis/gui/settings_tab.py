@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTime
 
+from muralis.config import available_config_formats
 from muralis.context import config_path as app_config_path
 from muralis.i18n import t
 from muralis.providers import ALL_PROVIDERS
@@ -479,6 +480,25 @@ class SettingsTab(QWidget):
         )
         layout.addSpacing(6)
 
+        # Configuration file format. Only formats this installation can both
+        # read and write are offered, so TOML and YAML appear only when their
+        # optional dependencies are present.
+        formats = available_config_formats()
+        if len(formats) > 1:
+            format_widget, self.format_buttons = self._segmented(
+                formats, cols=3, values=formats
+            )
+            self._check_value(self.format_buttons, self._config_format(), fallback=formats[0])
+            for button, fmt in zip(self.format_buttons, formats):
+                button.toggled.connect(lambda checked, f=fmt: self._on_format_clicked(checked, f))
+            self._row(
+                layout,
+                t("gui.settings.config_format"),
+                format_widget,
+                description=t("gui.settings.desc.config_format"),
+            )
+            layout.addSpacing(6)
+
     def _build_action_buttons(self):
         """Create Apply/Restore buttons (placed top-right in the page header)."""
         self.apply_btn = QPushButton(t("gui.settings.apply"))
@@ -565,6 +585,35 @@ class SettingsTab(QWidget):
     def _on_theme_clicked(self, checked: bool, theme_id: str):
         if checked and self.on_theme_change:
             self.on_theme_change(theme_id)
+
+    def _config_format(self) -> str:
+        """The format of the configuration file currently in use."""
+        try:
+            return self._load_raw().format
+        except Exception:
+            return "json"
+
+    def _on_format_clicked(self, checked: bool, fmt: str) -> None:
+        """Rewrite the config file in another format.
+
+        This changes the file on disk, so the change is only fully in effect
+        next time Muralis starts.
+        """
+        from .dialogs import info, warning
+
+        if not checked or fmt == self._config_format():
+            return
+        try:
+            new_path = self._load_raw().convert(fmt)
+        except Exception as exc:
+            warning(self, t("gui.dialog.error_title"), str(exc))
+            return
+        self.config_path = new_path
+        info(
+            self,
+            t("gui.settings.success_title"),
+            t("gui.settings.format_changed", path=str(new_path)),
+        )
 
     # ------------------------------------------------------------------
     # Persistence    # ------------------------------------------------------------------
