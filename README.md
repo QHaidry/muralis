@@ -24,7 +24,8 @@ graphical interface (Qt/PySide6).
 - ⏰ **Automatic daily updates** — via a systemd user timer (cron fallback)
 - 🎨 **Image effects** — blur, darken, grayscale, vibrant, vignette
 - 🖼️ **Graphical interface** — preview, history, settings and themes
-- 📓 **Desktop notifications** (via `notify-send`)
+- 🖼️ **Set your own image** — pick a local wallpaper from the GUI or `--set-image`
+- 📓 **Desktop notifications** (via `notify-send`, toggleable in Settings)
 - 💾 **Smart storage management** with auto-cleanup by age or file count
 - 🔐 **API key management** — check, set, remove and validate keys from the CLI
 - 🌍 **Internationalization** — English and French, user-overridable
@@ -98,6 +99,12 @@ muralis --once --provider nasa
 
 # Setup daily automatic updates (systemd timer, cron fallback)
 muralis --set-daily
+
+# Set a local image file as the wallpaper
+muralis --set-image ~/Pictures/wall.jpg
+
+# Download a wallpaper without applying it
+muralis --get-image
 
 # Show current configuration
 muralis --show-config

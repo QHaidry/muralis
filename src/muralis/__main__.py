@@ -3,10 +3,10 @@
 
 import sys
 import argparse
-from pathlib import Path
 
 from muralis.app import MuralisApp
 from muralis import __version__
+from muralis.context import config_path as app_config_path
 from muralis.i18n import t
 from muralis.providers import ALL_PROVIDERS
 
@@ -26,7 +26,7 @@ def parse_arguments():
     parser.add_argument(
         "-c",
         "--config",
-        default=str(Path.home() / ".config/muralis/config.ini"),
+        default=str(app_config_path()),
         help=t("cli.help.config"),
     )
 
@@ -35,6 +35,10 @@ def parse_arguments():
     parser.add_argument("--once", action="store_true", help=t("cli.help.once"))
 
     parser.add_argument("--set-daily", action="store_true", help=t("cli.help.set_daily"))
+
+    parser.add_argument("--set-image", metavar="FILE", help=t("cli.help.set_image"))
+
+    parser.add_argument("--get-image", action="store_true", help=t("cli.help.get_image"))
 
     parser.add_argument("--daemon", action="store_true", help=t("cli.help.daemon"))
 
@@ -227,6 +231,8 @@ def show_help():
 {t('cli.banner.once_line')}
 {t('cli.banner.once_provider_line')}
 {t('cli.banner.set_daily_line')}
+{t('cli.banner.set_image_line')}
+{t('cli.banner.get_image_line')}
 {t('cli.banner.gui_line')}
 {t('cli.banner.gui_line_alt')}
 
@@ -280,6 +286,8 @@ def main():
         args.once
         or args.set_daily
         or args.daemon
+        or args.set_image
+        or args.get_image
         or args.show_config
         or args.export_config
         or args.import_config
@@ -319,6 +327,22 @@ def main():
     if args.once:
         success = app.run_once(args.provider)
         return 0 if success else 1
+
+    # Download but don't apply (--get-image)
+    if args.get_image:
+        path = app.fetch_image_only(args.provider)
+        if path is None:
+            return 1
+        print(t("cli.ok.get_image", path=path))
+        return 0
+
+    # Set a local image as the wallpaper (--set-image)
+    if args.set_image:
+        success = app.set_local_image(args.set_image)
+        if success:
+            print(t("cli.ok.set_image", path=args.set_image))
+            return 0
+        return 1
 
     # Handle foreground daemon (blocking auto-update loop)
     if args.daemon:

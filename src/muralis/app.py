@@ -9,6 +9,7 @@ from muralis.providers import get_provider, ALL_PROVIDERS
 from muralis.setter import get_wallpaper_setter
 from muralis.storage import StorageManager
 from muralis.scheduler import SchedulerManager
+from muralis.updater import WallpaperUpdater
 from muralis.utils.notify import send_notification
 
 
@@ -231,16 +232,34 @@ class MuralisApp:
             self.logger.error(f"Failed to get provider: {e}")
             return False
 
-        from muralis.updater import WallpaperUpdater
+        return self._build_updater().update(provider)
 
-        updater = WallpaperUpdater(
+    def fetch_image_only(self, provider_name: Optional[str] = None) -> Optional[Path]:
+        """Download the wallpaper and save it without setting it (``--get-image``).
+
+        Returns the path of the saved image, or None on failure.
+        """
+        try:
+            provider = self.get_provider(provider_name)
+        except Exception as e:
+            self.logger.error(f"Failed to get provider: {e}")
+            return None
+
+        return self._build_updater().fetch_only(provider)
+
+    def set_local_image(self, image_path: str) -> bool:
+        """Set a local image file as the wallpaper (``--set-image``)."""
+        return self._build_updater().set_local_image(Path(image_path))
+
+    def _build_updater(self) -> WallpaperUpdater:
+        """Build the shared update pipeline used by run/fetch/set commands."""
+        return WallpaperUpdater(
             config=self.config,
             setter=self.setter,
             storage=self.storage,
             download=self.download_image,
             logger=self.logger,
         )
-        return updater.update(provider)
 
     def setup_scheduler(self) -> bool:
         """Setup automatic wallpaper updates.

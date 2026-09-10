@@ -24,21 +24,18 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer, QSize
 
 from muralis import __version__
+from muralis.context import APP, DEFAULT_WALLPAPER_DIR, config_path
 from muralis.i18n import t
 
 from .settings_tab import SettingsTab
 from .history_tab import HistoryTab
 from .preview_widget import PreviewWidget
 from .theme import ThemeManager, DEFAULT_THEME
-from .icons import app_icon, make_icon, render_pixmap, ICON_IDLE, icon_tint_for_theme
+from .icons import app_icon, make_icon, render_color_pixmap, ICON_IDLE
 from .configview import config_view
-
-CONFIG_PATH = Path.home() / ".config" / "muralis" / "config.json"
 
 # ConfigParser-compatible read/write facade over the JSON config.
 _CONFIG = config_view
-
-WALLPAPER_DIR = Path.home() / "Pictures" / "Muralis"
 
 
 def _safe_mtime(path: Path) -> float:
@@ -68,7 +65,7 @@ class MainWindow(QMainWindow):
         """Initialize the main window."""
         super().__init__(parent)
 
-        self.setWindowTitle("Muralis")
+        self.setWindowTitle(APP.display_name)
         self.setWindowIcon(app_icon())
         self.setMinimumSize(1000, 700)
         self.resize(1150, 780)
@@ -95,6 +92,7 @@ class MainWindow(QMainWindow):
 
         # Build pages
         self.preview_widget = PreviewWidget(refresh_callback=self._refresh_wallpaper, parent=self)
+        self.preview_widget.local_image_callback = self._set_local_image
         self.history_tab = HistoryTab(
             refresh_callback=self._refresh_wallpaper,
             wallpaper_applied_callback=self._load_current_wallpaper,
@@ -270,9 +268,9 @@ class MainWindow(QMainWindow):
         card_layout.setContentsMargins(28, 28, 28, 28)
         card_layout.setSpacing(8)
 
-        # Application icon
+        # Application icon (full-color logo)
         icon_label = QLabel()
-        icon_label.setPixmap(render_pixmap("muralis", 64, "#ffffff"))
+        icon_label.setPixmap(render_color_pixmap("muralis", 64))
         icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         card_layout.addWidget(icon_label)
 
@@ -373,8 +371,10 @@ class MainWindow(QMainWindow):
         """Refresh the status bar info (image, provider, daily update)."""
         # Current image
         image_name = "—"
-        if WALLPAPER_DIR.exists():
-            wallpapers = sorted(WALLPAPER_DIR.glob("muralis_*.jpg"), key=_safe_mtime, reverse=True)
+        if DEFAULT_WALLPAPER_DIR.exists():
+            wallpapers = sorted(
+                DEFAULT_WALLPAPER_DIR.glob("muralis_*.jpg"), key=_safe_mtime, reverse=True
+            )
             if wallpapers:
                 image_name = wallpapers[0].name
 
@@ -455,11 +455,8 @@ class MainWindow(QMainWindow):
             button.setIcon(make_icon(icon_name, accent if button.isChecked() else ICON_IDLE, 18))
 
     def _refresh_app_icon(self):
-        """Re-tint the window icon for the active theme's surfaces."""
-        theme_id = self._read_config().get("gui", "theme", fallback=DEFAULT_THEME)
-        colors = self.theme_manager.load_colors(theme_id)
-        tint = icon_tint_for_theme(colors)
-        self.setWindowIcon(app_icon(tint))
+        """Refresh the window icon (the full-color muralis logo)."""
+        self.setWindowIcon(app_icon())
 
     def _apply_stored_theme(self):
         """Apply the theme saved in the config (default: reasonix)."""
@@ -489,6 +486,25 @@ class MainWindow(QMainWindow):
         """Load and display the current wallpaper."""
         self.preview_widget.load_current_wallpaper()
 
+    def _set_local_image(self, path: str):
+        """Set a user-picked local image as the wallpaper."""
+        from muralis.app import MuralisApp
+        from .dialogs import warning
+
+        self.status_bar.showMessage(t("gui.status.updating"))
+        try:
+            app = MuralisApp(str(config_path()))
+            if app.set_local_image(path):
+                self.status_bar.showMessage(t("gui.preview.set_success"), 3000)
+                self._load_current_wallpaper()
+                self._update_status_bar()
+            else:
+                self.status_bar.showMessage(t("gui.preview.set_failed"), 3000)
+                warning(self, t("gui.dialog.error_title"), t("gui.preview.set_failed"))
+        except Exception as e:
+            self.status_bar.showMessage(t("gui.status.error", error=str(e)), 5000)
+            warning(self, t("gui.dialog.error_title"), t("gui.preview.not_image"))
+
     def _refresh_wallpaper(self):
         """Manually refresh the wallpaper."""
         from muralis.app import MuralisApp
@@ -496,7 +512,7 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(t("gui.status.updating"))
 
         try:
-            app = MuralisApp(str(CONFIG_PATH))
+            app = MuralisApp(str(config_path()))
             if app.run_once():
                 self.status_bar.showMessage(t("gui.status.success"), 3000)
                 self._load_current_wallpaper()
@@ -547,7 +563,7 @@ class MainWindow(QMainWindow):
         from muralis.app import MuralisApp
         from muralis.scheduler import SchedulerManager
 
-        app = MuralisApp(str(CONFIG_PATH))
+        app = MuralisApp(str(config_path()))
         sched = SchedulerManager(app.config)
         if enable:
             sched.setup()

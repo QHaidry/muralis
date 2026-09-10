@@ -10,14 +10,13 @@ substituted into the QSS template below.
 import json
 import string
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
+
+from muralis.context import user_themes_dir
 
 from .icons import ICONS_DIR
 
 DEFAULT_THEME = "reasonix"
-
-# User-editable themes directory
-THEMES_DIR = Path.home() / ".config" / "muralis" / "themes"
 
 # Built-in themes shipped with the package
 BUILTIN_THEMES_DIR = Path(__file__).parent / "themes"
@@ -36,8 +35,11 @@ def load_json(path: Path) -> Dict[str, Any]:
 class ThemeManager:
     """Loads, lists and applies user-editable themes."""
 
-    def __init__(self, app=None):
+    def __init__(self, app=None, themes_dir: Optional[Path] = None):
         self.app = app
+        # Resolved through the application context, so a test — or a relocated
+        # profile — can point themes elsewhere without touching ~/.config.
+        self.themes_dir = Path(themes_dir) if themes_dir is not None else user_themes_dir()
         self._seed_builtins()
 
     # ------------------------------------------------------------------
@@ -50,11 +52,11 @@ class ThemeManager:
         falls back to reading the built-in themes directly.
         """
         try:
-            THEMES_DIR.mkdir(parents=True, exist_ok=True)
+            self.themes_dir.mkdir(parents=True, exist_ok=True)
         except OSError:
             return
         for builtin in BUILTIN_THEMES_DIR.glob("*.json"):
-            dest = THEMES_DIR / builtin.name
+            dest = self.themes_dir / builtin.name
             if not dest.exists():
                 try:
                     dest.write_text(builtin.read_text(encoding="utf-8"), encoding="utf-8")
@@ -64,7 +66,7 @@ class ThemeManager:
     def list_themes(self) -> List[str]:
         """List available theme ids (built-in + user themes), sorted."""
         names = {p.stem for p in BUILTIN_THEMES_DIR.glob("*.json")}
-        names.update(p.stem for p in THEMES_DIR.glob("*.json"))
+        names.update(p.stem for p in self.themes_dir.glob("*.json"))
         return sorted(names) or [DEFAULT_THEME]
 
     def load_colors(self, theme_id: str) -> Dict[str, Any]:
@@ -77,7 +79,7 @@ class ThemeManager:
         builtin = load_json(BUILTIN_THEMES_DIR / f"{theme_id}.json")
         merged = dict(builtin.get("colors", {}))
 
-        user_path = THEMES_DIR / f"{theme_id}.json"
+        user_path = self.themes_dir / f"{theme_id}.json"
         if user_path.exists():
             user = load_json(user_path)
             user_colors = user.get("colors")

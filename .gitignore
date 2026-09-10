@@ -281,3 +281,7 @@ env/
 *.dmg
 *.app
 scripts/commands.txt
+
+# Reasonix agent tooling state (local to this machine, never part of the app)
+.reasonix/
+reasonix.toml

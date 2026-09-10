@@ -4,7 +4,7 @@
     "epilog": "Muralis - un petit utilitaire de fonds d'écran par Quoxiom",
     "help": {
       "gui": "Lancer l'interface graphique (identique à 'muralis-gui')",
-      "config": "Chemin du fichier de configuration (défaut : ~/.config/muralis/config.ini)",
+      "config": "Chemin du fichier de configuration (défaut : ~/.config/muralis/config.json)",
       "provider": "Forcer le fournisseur pour cette exécution",
       "once": "Exécuter un cycle de mise à jour puis quitter",
       "set_daily": "Installer la minuterie systemd pour les mises à jour quotidiennes",
@@ -20,20 +20,25 @@
       "check_keys": "Vérifier l'état des clés API pour tous les fournisseurs",
       "set_key": "Définir une clé API pour un fournisseur (ex. : --set-key unsplash VOTRE_CLE)",
       "remove_key": "Supprimer la clé API d'un fournisseur",
-      "get_key_instructions": "Afficher les instructions pour obtenir une clé API"
+      "get_key_instructions": "Afficher les instructions pour obtenir une clé API",
+      "set_image": "Définir un fichier image local comme fond d'écran (ex. : --set-image ~/Images/fond.jpg)",
+      "get_image": "Télécharger le fond d'écran dans ~/Pictures/Muralis sans l'appliquer"
     },
     "err": {
       "not_found": "Avertissement : '{key}' introuvable",
       "format": "Erreur : utilisez le format SECTION.CLE (ex. : general.provider)",
       "invalid_key": "\n❌ Clé Unsplash invalide",
       "invalid_key_hint": "   Veuillez vérifier votre clé et réessayer",
-      "invalid_key_update": "   Mise à jour : muralis --set-key unsplash VOTRE_CLE\n"
+      "invalid_key_update": "   Mise à jour : muralis --set-key unsplash VOTRE_CLE\n",
+      "not_found_file": "Erreur : fichier introuvable : {path}"
     },
     "ok": {
       "set": "✓ {section}.{key} = {value} défini",
       "reset": "✓ Configuration réinitialisée aux valeurs par défaut",
       "exported": "✓ Configuration exportée vers {path}",
-      "imported": "✓ Configuration importée depuis {path}"
+      "imported": "✓ Configuration importée depuis {path}",
+      "set_image": "✓ Fond d'écran défini : {path}",
+      "get_image": "✓ Fond d'écran téléchargé dans {path} (non appliqué)"
     },
     "warn": {
       "reset": "⚠️  Attention : cela réinitialisera toute la configuration.",
@@ -104,13 +109,15 @@
       "providers": "📋 FOURNISSEURS",
       "list_providers_line": "  muralis --list-providers          Voir tous les fournisseurs",
       "tips": "💡 CONSEILS",
-      "tips_config": "  • Emplacement du fichier de configuration : ~/.config/muralis/config.ini",
+      "tips_config": "  • Emplacement du fichier de configuration : ~/.config/muralis/config.json",
       "tips_editor": "  • Modifiez la configuration avec n'importe quel éditeur de texte",
       "tips_folder": "  • Fonds d'écran enregistrés dans : ~/Pictures/Muralis",
       "tips_verbose": "  • Utilisez --verbose pour la sortie de débogage",
       "docs": "📚 DOCUMENTATION COMPLÈTE",
       "docs_help_line": "  muralis --help                    Afficher cette aide",
-      "docs_url": "  https://github.com/quoxiom/muralis"
+      "docs_url": "  https://github.com/quoxiom/muralis",
+      "set_image_line": "  muralis --set-image IMAGE       Définir une image de votre appareil",
+      "get_image_line": "  muralis --get-image             Télécharger sans appliquer"
     },
     "sched": {
       "systemd_ok": "✓ Minuterie quotidienne Muralis installée avec succès (systemd)",
@@ -211,7 +218,12 @@
         "downloaded": "Téléchargé : {time}",
         "size": "Taille : {kb:.1f} Ko",
         "provider": "Fournisseur : {name}"
-      }
+      },
+      "set_local": "Définir à partir d'un fichier…",
+      "pick_local": "Choisir une image à définir comme fond d'écran",
+      "set_success": "Fond d'écran défini",
+      "set_failed": "Échec de la définition du fond d'écran",
+      "not_image": "Le fichier sélectionné n'est pas une image lisible"
     },
     "history": {
       "refresh": "Actualiser l'historique",
@@ -258,8 +270,10 @@
         "save_downloads": "Conserver une copie locale dans ~/Pictures/Muralis.",
         "max_files": "Les fichiers les plus anciens sont supprimés au-delà de cette limite.",
         "max_days": "Les fichiers plus anciens que ce nombre de jours sont supprimés.",
-        "theme": "Thème de couleurs de l'interface."
-      }
+        "theme": "Thème de couleurs de l'interface.",
+        "notifications": "Afficher une notification lorsque le fond d'écran change."
+      },
+      "notifications": "Notifications"
     },
     "about": {
       "desc": "Gestionnaire de fonds d'écran pour Linux.\nUn petit utilitaire de fonds d'écran par Quoxiom.",
@@ -274,7 +288,8 @@
       "docs_text": "Veuillez visiter :\n{url}",
       "error_title": "Erreur",
       "failed_update": "Échec de la mise à jour du fond d'écran",
-      "failed_update_detail": "Échec de la mise à jour du fond d'écran :\n{error}"
+      "failed_update_detail": "Échec de la mise à jour du fond d'écran :\n{error}",
+      "pick_title": "Sélectionner une image"
     }
   }
 }

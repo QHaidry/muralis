@@ -8,7 +8,7 @@ method on the application object.
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from muralis.config import ConfigManager
 from muralis.storage import StorageManager
@@ -94,6 +94,54 @@ class WallpaperUpdater:
             self.logger.error(f"❌ Unexpected error: {e}", exc_info=True)
             return False
 
+    def fetch_only(self, provider: Any) -> Optional[Path]:
+        """Download the provider's wallpaper and save it, without setting it.
+
+        Used by ``muralis --get-image``. Returns the saved path on success,
+        or None if the URL could not be obtained or the download failed.
+        """
+        try:
+            resolution = self.config.get_str("image", "resolution", "3840x2160")
+            url = provider.get_daily_url(resolution)
+            if not url:
+                self.logger.error("❌ Failed to get wallpaper URL from provider")
+                return None
+
+            image_path = self._build_image_path(provider)
+            if not self.download(url, image_path):
+                return None
+
+            self.logger.info(f"💾 Saved wallpaper to {image_path}")
+            return image_path
+        except Exception as e:
+            self.logger.error(f"❌ Unexpected error: {e}", exc_info=True)
+            return None
+
+    def set_local_image(self, image_path: Path) -> bool:
+        """Set a local image file as the wallpaper (no download).
+
+        Applies the configured effects (when enabled), sets the wallpaper via
+        the desktop-environment setter, and sends a notification on success.
+        """
+        try:
+            if not image_path.is_file():
+                self.logger.error(f"❌ Image file not found: {image_path}")
+                return False
+
+            final_path = self._apply_effects(image_path)
+
+            self.logger.info(f"🖥️  Setting local image: {final_path}")
+            if not self.setter.set_wallpaper(str(final_path)):
+                self.logger.error("❌ Failed to set wallpaper")
+                return False
+
+            self.logger.info("✅ Wallpaper set successfully")
+            self._notify(None, {"title": image_path.name})
+            return True
+        except Exception as e:
+            self.logger.error(f"❌ Unexpected error: {e}", exc_info=True)
+            return False
+
     # ------------------------------------------------------------------
     # Pipeline steps
     # ------------------------------------------------------------------
@@ -144,7 +192,8 @@ class WallpaperUpdater:
         """Send a desktop notification when notifications are enabled."""
         if not self.config.get_bool("notifications", "enabled", True):
             return
-        title = f"Muralis: {provider.name.title()}"
+        source = provider.name.title() if provider is not None else "Muralis"
+        title = f"Muralis: {source}"
         message = metadata.get("copyright", metadata.get("title", "Wallpaper updated"))
         if len(message) > 100:
             message = message[:97] + "..."

@@ -28,28 +28,30 @@ def run_gui():
         run_gui()
     """
     import sys
-    from pathlib import Path
     from PySide6.QtWidgets import QApplication
     from PySide6.QtCore import Qt
     from PySide6.QtGui import QPalette, QColor
+
+    from muralis.context import APP
 
     from .theme import ThemeManager, DEFAULT_THEME
     from .icons import app_icon
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Muralis")
-    app.setOrganizationName("Quoxiom")
-    app.setApplicationDisplayName("Muralis")
+    # Identity comes from the application spec, so renaming Muralis is a
+    # one-line change rather than a search for the old name.
+    app.setApplicationName(APP.display_name)
+    app.setOrganizationName(APP.org)
+    app.setApplicationDisplayName(APP.display_name)
     app.setWindowIcon(app_icon())
 
     # Apply the stored theme (or the default) before showing the window
     theme_manager = ThemeManager(app)
-    config_path = Path.home() / ".config/muralis/config.json"
     stored = DEFAULT_THEME
     try:
         from .configview import config_view
 
-        stored = config_view(str(config_path)).get("gui", "theme", fallback=DEFAULT_THEME)
+        stored = config_view().get("gui", "theme", fallback=DEFAULT_THEME)
     except Exception:
         pass
     if not theme_manager.apply(stored):

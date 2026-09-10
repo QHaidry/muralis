@@ -24,6 +24,10 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
 ]
 
+# Gesso (gesso-sdk) supplies application identity, path resolution and
+# internationalisation. It is not declared here yet because it is unpublished:
+# the dependency is satisfied by an editable install from a sibling checkout
+# (`pip install -e ../gesso`). Add a version specifier once it is on PyPI.
 dependencies = ["requests>=2.25.0", "Pillow>=8.0.0"]
 
 [project.optional-dependencies]

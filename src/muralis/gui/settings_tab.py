@@ -6,7 +6,6 @@ every row has its label on the left and the control on the right. Finite
 options use segmented selection buttons, on/off options use toggle buttons.
 """
 
-from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 from PySide6.QtCore import Qt, QSignalBlocker, Signal
@@ -29,6 +28,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTime
 
+from muralis.context import config_path as app_config_path
 from muralis.i18n import t
 from muralis.providers import ALL_PROVIDERS
 from .theme import DEFAULT_THEME
@@ -117,7 +117,7 @@ class SettingsTab(QWidget):
         """
         super().__init__(parent)
 
-        self.config_path = Path.home() / ".config/muralis/config.json"
+        self.config_path = app_config_path()
         self.theme_manager = theme_manager
         self.on_theme_change = on_theme_change
         self.on_settings_changed = on_settings_changed
@@ -400,6 +400,14 @@ class SettingsTab(QWidget):
             description=t("gui.settings.desc.randomize"),
         )
 
+        self.notifications_toggle = self._toggle_button(t("gui.settings.notifications"))
+        self._row(
+            layout,
+            t("gui.settings.notifications"),
+            self.notifications_toggle,
+            description=t("gui.settings.desc.notifications"),
+        )
+
     def _build_image_rows(self, layout: QVBoxLayout):
         resolution_labels = [label for label, _ in RESOLUTIONS]
         resolution_values = [res for _, res in RESOLUTIONS]
@@ -578,6 +586,7 @@ class SettingsTab(QWidget):
         self._set_toggle(self.auto_update_toggle, True)
         self.update_time_edit.setTime(QTime(9, 0))
         self._set_toggle(self.randomize_toggle, False)
+        self._set_toggle(self.notifications_toggle, True)
         self._set_toggle(self.effects_toggle, False)
         self._set_toggle(self.save_downloads_toggle, True)
         self.max_files_spin.setValue(100)
@@ -602,6 +611,13 @@ class SettingsTab(QWidget):
             self._set_toggle(
                 self.randomize_toggle,
                 config.getboolean("general", "randomize_provider", fallback=False),
+            )
+
+        # Notifications
+        if config.has_section("notifications"):
+            self._set_toggle(
+                self.notifications_toggle,
+                config.getboolean("notifications", "enabled", fallback=True),
             )
 
         # Image
@@ -649,6 +665,11 @@ class SettingsTab(QWidget):
         config["general"]["provider"] = self._checked_value(self.provider_buttons, "bing")
         config["general"]["auto_update"] = str(self.auto_update_toggle.isChecked()).lower()
         config["general"]["randomize_provider"] = str(self.randomize_toggle.isChecked()).lower()
+
+        # Notifications section
+        if "notifications" not in config:
+            config["notifications"] = {}
+        config["notifications"]["enabled"] = str(self.notifications_toggle.isChecked()).lower()
 
         # Scheduling (automatic update time)
         if "scheduling" not in config:

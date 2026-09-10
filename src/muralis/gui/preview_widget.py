@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QResizeEvent
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSizePolicy
 
+from muralis.context import DEFAULT_WALLPAPER_DIR
 from muralis.i18n import t
 
 MODIFIED_TIME_FORMAT = "%d %b %Y %H:%M:%S"
@@ -42,6 +43,7 @@ class PreviewWidget(QWidget):
         super().__init__(parent)
 
         self.refresh_callback = refresh_callback
+        self.local_image_callback: Optional[Callable] = None
         self._pixmap: Optional[QPixmap] = None
         self._tooltip = ""
 
@@ -63,12 +65,14 @@ class PreviewWidget(QWidget):
         # placed right-aligned in the page header row by MainWindow._make_page.
         self.refresh_btn = self._make_action_button(t("gui.preview.refresh"))
         self.open_folder_btn = self._make_action_button(t("gui.preview.open_folder"))
+        self.set_local_btn = self._make_action_button(t("gui.preview.set_local"))
         self.refresh_btn.clicked.connect(self.request_refresh)
         self.open_folder_btn.clicked.connect(self.open_wallpaper_folder)
+        self.set_local_btn.clicked.connect(self.choose_local_image)
 
     def action_buttons(self) -> list:
         """Return the action buttons for the page header row."""
-        return [self.refresh_btn, self.open_folder_btn]
+        return [self.set_local_btn, self.refresh_btn, self.open_folder_btn]
 
     def _make_action_button(self, label: str) -> QPushButton:
         button = QPushButton(label)
@@ -83,7 +87,7 @@ class PreviewWidget(QWidget):
             print("No refresh callback set")
 
     def load_current_wallpaper(self):
-        wallpaper_dir = Path.home() / "Pictures" / "Muralis"
+        wallpaper_dir = DEFAULT_WALLPAPER_DIR
         if wallpaper_dir.exists():
             wallpapers = list(wallpaper_dir.glob("muralis_*.jpg"))
             if wallpapers:
@@ -142,6 +146,19 @@ class PreviewWidget(QWidget):
     def open_wallpaper_folder(self):
         import subprocess
 
-        wallpaper_dir = Path.home() / "Pictures" / "Muralis"
+        wallpaper_dir = DEFAULT_WALLPAPER_DIR
         wallpaper_dir.mkdir(parents=True, exist_ok=True)
         subprocess.run(["xdg-open", str(wallpaper_dir)])
+
+    def choose_local_image(self):
+        """Open a file dialog and pass the chosen image to the application."""
+        from PySide6.QtWidgets import QFileDialog
+
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            t("gui.dialog.pick_title"),
+            str(Path.home()),
+            t("gui.preview.pick_local") + " (*.png *.jpg *.jpeg *.bmp *.webp);;All Files (*)",
+        )
+        if path and self.local_image_callback:
+            self.local_image_callback(path)

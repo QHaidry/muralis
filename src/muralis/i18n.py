@@ -1,155 +1,59 @@
-"""Internationalization (i18n) support for Muralis.
+"""Internationalisation for Muralis, backed by Gesso.
 
-Translations are stored in JSON language files. A language file is looked up in
-two places, in order of precedence:
+Gesso owns the machinery — catalog merging, language detection, and the
+framework/application/user override layers. Muralis owns only its strings,
+which live in ``src/muralis/i18n/<language>.json``.
 
-1. User directory:  ~/.config/muralis/i18n/<lang>.json   (editable, overrides)
-2. Package data:    src/muralis/i18n/<lang>.json          (shipped defaults)
-
-The active language is selected from the current culture (LANGUAGE, LC_ALL,
-LC_MESSAGES, LANG environment variables, then the system locale). If no file
-exists for the detected language, English is used as the fallback, and missing
-keys inside a partial translation fall back to the English value.
+The module-level :func:`t` is kept because that is what almost every call site
+uses. It delegates to a single process-wide translator built for Muralis's
+:func:`~muralis.context.context`, so the language is detected once and the
+user's overrides are found beside their settings rather than at a path written
+out here.
 """
 
-import json
-import locale
-import os
+from __future__ import annotations
+
 import threading
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
-DEFAULT_LANG = "en"
+from gesso.i18n import DEFAULT_LANGUAGE as DEFAULT_LANG
+from gesso.i18n import Translator, detect_language, normalize_lang
 
-# User-editable translations directory
-USER_I18N_DIR = Path.home() / ".config" / "muralis" / "i18n"
+from muralis.context import LOCALES_DIR, context
 
-# Built-in translations shipped with the package
-BUILTIN_I18N_DIR = Path(__file__).parent / "i18n"
-
-
-def normalize_lang(code: str) -> str:
-    """Normalize a locale code to a 2-letter language code.
-
-    'en_US.UTF-8' -> 'en', 'en-US' -> 'en', 'pt_BR' -> 'pt'
-    """
-    code = code.replace("-", "_").split(".")[0].strip()
-    return code.split("_")[0].lower()
-
-
-def detect_language() -> str:
-    """Detect the user's language from the current culture."""
-    # LANGUAGE can hold a colon-separated list of fallbacks
-    language_env = os.environ.get("LANGUAGE", "")
-    if language_env:
-        first = language_env.split(":")[0].strip()
-        if first:
-            return normalize_lang(first)
-
-    for var in ("LC_ALL", "LC_MESSAGES", "LANG"):
-        value = os.environ.get(var, "")
-        if value:
-            return normalize_lang(value)
-
-    try:
-        current, _ = locale.getdefaultlocale()
-        if current:
-            return normalize_lang(current)
-    except Exception:
-        pass
-
-    return DEFAULT_LANG
-
-
-def _load_file(path: Path) -> Dict[str, Any]:
-    """Load a JSON language/theme file, returning {} on any error."""
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            return data if isinstance(data, dict) else {}
-    except (OSError, json.JSONDecodeError):
-        return {}
-
-
-def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
-    """Recursively merge override into base (override wins)."""
-    result = dict(base)
-    for key, value in override.items():
-        if isinstance(value, dict) and isinstance(result.get(key), dict):
-            result[key] = _deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
-
-
-class Translator:
-    """Loads and looks up translations for the active language."""
-
-    def __init__(self, lang: Optional[str] = None):
-        self.lang = (lang or detect_language()).lower()
-        self._strings: Dict[str, Any] = {}
-        self._load()
-
-    def _read_lang(self, lang: str) -> Dict[str, Any]:
-        """Read a language file, user dir first, then builtin."""
-        merged: Dict[str, Any] = {}
-        builtin = BUILTIN_I18N_DIR / f"{lang}.json"
-        if builtin.exists():
-            merged.update(_load_file(builtin))
-        user = USER_I18N_DIR / f"{lang}.json"
-        if user.exists():
-            merged = _deep_merge(merged, _load_file(user))
-        return merged
-
-    def _load(self) -> None:
-        """Load translations, falling back to English for missing pieces."""
-        english = self._read_lang(DEFAULT_LANG)
-        if self.lang == DEFAULT_LANG:
-            self._strings = english
-            return
-
-        localized = self._read_lang(self.lang)
-        # English is the base; localized overrides where provided.
-        self._strings = _deep_merge(english, localized)
-
-    def t(self, key_name: str, **kwargs: Any) -> str:
-        """Translate a dotted key (e.g. 'gui.nav.preview'), formatting kwargs."""
-        value = self._strings
-        for part in key_name.split("."):
-            if isinstance(value, dict) and part in value:
-                value = value[part]
-            else:
-                return key_name
-        if not isinstance(value, str):
-            return key_name
-        if kwargs:
-            try:
-                value = value.format(**kwargs)
-            except (KeyError, IndexError, ValueError):
-                pass
-        return value
-
+__all__ = [
+    "DEFAULT_LANG",
+    "Translator",
+    "detect_language",
+    "normalize_lang",
+    "get_translator",
+    "set_language",
+    "t",
+]
 
 _translator: Optional[Translator] = None
 _lock = threading.Lock()
 
 
 def get_translator() -> Translator:
-    """Get the process-wide translator (initialized once)."""
+    """The process-wide translator, built on first use.
+
+    Gesso deliberately ships no such global. Muralis keeps one because a single
+    application having a single active language is simply the truth — and
+    unlike a framework global, this one belongs to the application.
+    """
     global _translator
     with _lock:
         if _translator is None:
-            _translator = Translator()
+            _translator = Translator.for_app(context(), locale_dir=LOCALES_DIR)
         return _translator
 
 
 def set_language(lang: str) -> None:
     """Force a language (mainly for tests)."""
-    global _translator
-    with _lock:
-        _translator = Translator(lang)
+    get_translator().set_language(lang)
 
 
 def t(key_name: str, **kwargs: Any) -> str:
-    """Translate a key using the process-wide translator."""
+    """Translate a dotted key using the process-wide translator."""
     return get_translator().t(key_name, **kwargs)

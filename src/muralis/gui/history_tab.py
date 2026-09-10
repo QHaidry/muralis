@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 
+from muralis.context import DEFAULT_WALLPAPER_DIR
 from muralis.i18n import t
 
 MODIFIED_TIME_FORMAT = "%d %b %Y %H:%M:%S"
@@ -170,7 +171,7 @@ class HistoryTab(QWidget):
     def refresh_history(self):
         self._clear_thumbnails()
 
-        wallpaper_dir = Path.home() / "Pictures" / "Muralis"
+        wallpaper_dir = DEFAULT_WALLPAPER_DIR
         if not wallpaper_dir.exists():
             no_wallpapers = QLabel(t("gui.history.empty"))
             no_wallpapers.setAlignment(Qt.AlignmentFlag.AlignCenter)

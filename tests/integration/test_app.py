@@ -208,7 +208,52 @@ class TestMuralisAppIntegration:
         mock_battery.return_value = True
         
         assert self.app.should_update() == False
-    
+
+    def test_set_local_image_success(self):
+        """Test setting a local image file as wallpaper."""
+        img = Path(self.temp_dir.name) / "local.jpg"
+        from PIL import Image
+        Image.new("RGB", (8, 8), (10, 200, 30)).save(img, "JPEG")
+
+        with patch.object(self.app.setter, 'set_wallpaper', return_value=True) as mock_set:
+            assert self.app.set_local_image(str(img)) is True
+            mock_set.assert_called_once()
+
+    def test_set_local_image_missing_file(self):
+        """Test set_local_image with a nonexistent file."""
+        missing = Path(self.temp_dir.name) / "does-not-exist.jpg"
+        with patch.object(self.app.setter, 'set_wallpaper') as mock_set:
+            assert self.app.set_local_image(str(missing)) is False
+            mock_set.assert_not_called()
+
+    def test_set_local_image_setter_fails(self):
+        """Test set_local_image when the DE setter fails."""
+        img = Path(self.temp_dir.name) / "local.jpg"
+        from PIL import Image
+        Image.new("RGB", (8, 8), (10, 200, 30)).save(img, "JPEG")
+
+        with patch.object(self.app.setter, 'set_wallpaper', return_value=False):
+            assert self.app.set_local_image(str(img)) is False
+
+    @patch('muralis.providers.bing.BingProvider.get_daily_url')
+    @patch('muralis.app.MuralisApp.download_image')
+    def test_fetch_image_only(self, mock_download, mock_url):
+        """Test --get-image downloads but does not set the wallpaper."""
+        mock_url.return_value = "https://example.com/wallpaper.jpg"
+        mock_download.side_effect = self._fake_download
+
+        with patch.object(self.app.setter, 'set_wallpaper') as mock_set:
+            path = self.app.fetch_image_only('bing')
+            assert path is not None
+            assert Path(path).exists()
+            mock_set.assert_not_called()
+
+    @patch('muralis.providers.bing.BingProvider.get_daily_url')
+    def test_fetch_image_only_no_url(self, mock_url):
+        """Test --get-image when the provider returns no URL."""
+        mock_url.return_value = None
+        assert self.app.fetch_image_only('bing') is None
+
     def tearDown_method(self):
         """Clean up test fixtures."""
         self.temp_dir.cleanup()

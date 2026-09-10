@@ -4,7 +4,7 @@
     "epilog": "Muralis - a small wallpaper utility by Quoxiom",
     "help": {
       "gui": "Launch the graphical user interface (same as 'muralis-gui')",
-      "config": "Configuration file path (default: ~/.config/muralis/config.ini)",
+      "config": "Configuration file path (default: ~/.config/muralis/config.json)",
       "provider": "Override wallpaper provider for this run",
       "once": "Run one update cycle and exit",
       "set_daily": "Setup systemd timer for daily automatic updates",
@@ -20,20 +20,25 @@
       "check_keys": "Check API key status for all providers",
       "set_key": "Set API key for a provider (e.g., --set-key unsplash YOUR_KEY)",
       "remove_key": "Remove API key for a provider",
-      "get_key_instructions": "Show instructions to get API key for a provider"
+      "get_key_instructions": "Show instructions to get API key for a provider",
+      "set_image": "Set a local image file as the wallpaper (e.g. --set-image ~/Pictures/wall.jpg)",
+      "get_image": "Download the wallpaper to ~/Pictures/Muralis without setting it"
     },
     "err": {
       "not_found": "Warning: '{key}' not found",
       "format": "Error: Use format SECTION.KEY (e.g., general.provider)",
       "invalid_key": "\n❌ Invalid Unsplash API key",
       "invalid_key_hint": "   Please check your key and try again",
-      "invalid_key_update": "   Update with: muralis --set-key unsplash YOUR_KEY\n"
+      "invalid_key_update": "   Update with: muralis --set-key unsplash YOUR_KEY\n",
+      "not_found_file": "Error: file not found: {path}"
     },
     "ok": {
       "set": "✓ Set {section}.{key} = {value}",
       "reset": "✓ Configuration reset to defaults",
       "exported": "✓ Configuration exported to {path}",
-      "imported": "✓ Configuration imported from {path}"
+      "imported": "✓ Configuration imported from {path}",
+      "set_image": "✓ Wallpaper set to {path}",
+      "get_image": "✓ Wallpaper downloaded to {path} (not applied)"
     },
     "warn": {
       "reset": "⚠️  Warning: This will reset all configuration to defaults.",
@@ -104,13 +109,15 @@
       "providers": "📋 PROVIDERS",
       "list_providers_line": "  muralis --list-providers          Show all available providers",
       "tips": "💡 TIPS",
-      "tips_config": "  • Config file location: ~/.config/muralis/config.ini",
+      "tips_config": "  • Config file location: ~/.config/muralis/config.json",
       "tips_editor": "  • Edit config directly with any text editor",
       "tips_folder": "  • Wallpapers saved to: ~/Pictures/Muralis",
       "tips_verbose": "  • Run with --verbose for debug output",
       "docs": "📚 FULL DOCUMENTATION",
       "docs_help_line": "  muralis --help                    Show this help",
-      "docs_url": "  https://github.com/quoxiom/muralis"
+      "docs_url": "  https://github.com/quoxiom/muralis",
+      "set_image_line": "  muralis --set-image IMAGE       Set an image from your device",
+      "get_image_line": "  muralis --get-image             Download without applying"
     },
     "sched": {
       "systemd_ok": "✓ Muralis daily timer installed successfully (systemd)",
@@ -211,7 +218,12 @@
         "downloaded": "Downloaded: {time}",
         "size": "Size: {kb:.1f} KB",
         "provider": "Provider: {name}"
-      }
+      },
+      "set_local": "Set from File…",
+      "pick_local": "Choose an image to set as wallpaper",
+      "set_success": "Wallpaper set",
+      "set_failed": "Failed to set wallpaper",
+      "not_image": "The selected file is not a readable image"
     },
     "history": {
       "refresh": "Refresh History",
@@ -258,8 +270,10 @@
         "save_downloads": "Keep a local copy in ~/Pictures/Muralis.",
         "max_files": "Oldest files are removed beyond this limit.",
         "max_days": "Files older than this are removed.",
-        "theme": "Color theme for the interface."
-      }
+        "theme": "Color theme for the interface.",
+        "notifications": "Show a notification when the wallpaper changes."
+      },
+      "notifications": "Desktop notifications"
     },
     "about": {
       "desc": "Smart Wallpaper Manager for Linux desktops.\nA small wallpaper utility by Quoxiom.",
@@ -274,7 +288,8 @@
       "docs_text": "Please visit:\n{url}",
       "error_title": "Error",
       "failed_update": "Failed to update wallpaper",
-      "failed_update_detail": "Failed to update wallpaper:\n{error}"
+      "failed_update_detail": "Failed to update wallpaper:\n{error}",
+      "pick_title": "Select Image"
     }
   }
 }

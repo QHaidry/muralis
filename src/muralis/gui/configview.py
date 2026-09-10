@@ -7,7 +7,6 @@ and section subscripting), so this module is just a thin factory returning a
 ``ConfigManager`` for the app config path.
 """
 
-from pathlib import Path
 from typing import Optional
 
 
@@ -15,11 +14,12 @@ def config_view(config_path: Optional[str] = None):
     """Return a ``ConfigManager`` for the app config.
 
     Args:
-        config_path: Path to the config file (default
-            ~/.config/muralis/config.json).
+        config_path: Path to the config file (default: whatever Muralis's
+            application context resolves, ~/.config/muralis/config.json).
     """
     from muralis.config import ConfigManager
+    from muralis.context import config_path as resolved_config_path
 
     if config_path is None:
-        config_path = str(Path.home() / ".config" / "muralis" / "config.json")
+        config_path = str(resolved_config_path())
     return ConfigManager(config_path)

@@ -55,6 +55,8 @@ muralis --once --provider bing
 | `-p`, `--provider NAME` | Override the wallpaper source |
 | `--once` | Run one update cycle |
 | `--set-daily` | Setup the systemd timer (daily updates) |
+| `--set-image FILE` | Set a local image file as the wallpaper |
+| `--get-image` | Download the wallpaper to `~/Pictures/Muralis` without applying it |
 | `--list-providers` | Show available providers |
 | `--show-config` | Display the current configuration |
 | `--get SECTION.KEY` | Get a configuration value |
