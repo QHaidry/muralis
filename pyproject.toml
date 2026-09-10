@@ -36,6 +36,9 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
+    # Drives the Qt tests with the offscreen platform plugin, so the GUI layer
+    # is covered without a display.
+    "pytest-qt>=4.2.0",
     "black==24.10.0",
     "flake8==7.3.0",
     "mypy==1.10.1",
@@ -47,6 +50,7 @@ full = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
+    "pytest-qt>=4.2.0",
     "black==24.10.0",
     "flake8==7.3.0",
     "mypy==1.10.1",
