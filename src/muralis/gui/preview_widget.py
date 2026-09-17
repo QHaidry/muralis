@@ -54,7 +54,7 @@ class PreviewWidget(QWidget):
 
         # Expands in both directions — the sole body of the preview.
         self.preview_label = QLabel()
-        self.preview_label.setObjectName("previewImage")
+        self.preview_label.setObjectName("card")
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setMinimumHeight(200)
         self.preview_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)

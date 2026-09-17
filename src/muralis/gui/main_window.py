@@ -263,7 +263,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
 
         card = QFrame()
-        card.setObjectName("aboutCard")
+        card.setObjectName("card")
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(28, 28, 28, 28)
         card_layout.setSpacing(8)
@@ -275,7 +275,7 @@ class MainWindow(QMainWindow):
         card_layout.addWidget(icon_label)
 
         title = QLabel(t("gui.nav.brand"))
-        title.setObjectName("aboutTitle")
+        title.setObjectName("displayTitle")
         card_layout.addWidget(title)
 
         desc = QLabel(t("gui.about.desc"))
@@ -291,14 +291,14 @@ class MainWindow(QMainWindow):
         github = QLabel(
             f'<a href="https://github.com/quoxiom/muralis">' f"{t('gui.about.github')}</a>"
         )
-        github.setObjectName("aboutLink")
+        github.setObjectName("link")
         github.setOpenExternalLinks(True)
         card_layout.addWidget(github)
 
         docs = QLabel(
             f'<a href="https://github.com/quoxiom/muralis/wiki">' f"{t('gui.about.docs')}</a>"
         )
-        docs.setObjectName("aboutLink")
+        docs.setObjectName("link")
         docs.setOpenExternalLinks(True)
         card_layout.addWidget(docs)
 

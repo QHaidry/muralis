@@ -61,7 +61,7 @@ class _NavItem(QWidget):
 
     def __init__(self, title: str, description: str, parent=None):
         super().__init__(parent)
-        self.setObjectName("settingsNavItem")
+        self.setObjectName("navItem")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         layout = QVBoxLayout(self)
@@ -150,7 +150,7 @@ class SettingsTab(QWidget):
     def _build_nav(self, body: QHBoxLayout):
         """Left settings navigation list."""
         nav = QFrame()
-        nav.setObjectName("settingsNav")
+        nav.setObjectName("panel")
         nav.setFixedWidth(240)
         nav_layout = QVBoxLayout(nav)
         nav_layout.setContentsMargins(8, 12, 8, 12)
@@ -181,7 +181,7 @@ class SettingsTab(QWidget):
     def _build_panes(self, body: QHBoxLayout):
         """Right content panes (one per category), scrollable."""
         self.stack = QStackedWidget()
-        self.stack.setObjectName("settingsStack")
+        self.stack.setObjectName("contentStack")
 
         self.panes: Dict[str, QWidget] = {}
         for key, title_key, desc_key in CATEGORIES:
@@ -203,11 +203,11 @@ class SettingsTab(QWidget):
         pane_layout.setSpacing(6)
 
         title_label = QLabel(title)
-        title_label.setObjectName("settingsPaneTitle")
+        title_label.setObjectName("sectionTitle")
         pane_layout.addWidget(title_label)
 
         desc_label = QLabel(description)
-        desc_label.setObjectName("settingsPaneDesc")
+        desc_label.setObjectName("sectionDesc")
         desc_label.setWordWrap(True)
         pane_layout.addWidget(desc_label)
 
