@@ -89,7 +89,8 @@ def test_the_pages_are_the_muralis_widgets(window):
 
 def test_the_preview_page_offers_its_actions(window):
     # The shell takes a page's buttons and puts them in the header row, without
-    # the window having to know what they are.
+    # the window having to know what they are. `actions` is a property, not a
+    # method — Gesso surfaces the list it builds in `add_action`.
     assert window.header("preview").actions
 
 

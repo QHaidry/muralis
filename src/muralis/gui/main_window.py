@@ -190,10 +190,15 @@ class MainWindow(AppShell):
     # Theming
     # ------------------------------------------------------------------
     def _apply_stored_theme(self) -> None:
-        """Apply the theme saved in the config (default: reasonix)."""
+        """Apply the theme saved in the config (default: reasonix).
+
+        A stored name with no palette installed is not an error: the manager
+        falls back to its default, so a user who deleted a theme file gets
+        Muralis's own look rather than a neutral one. There is therefore no
+        second call to make here.
+        """
         theme_id = self._read_config().get("gui", "theme", fallback=DEFAULT_THEME)
-        if not self.apply_theme(theme_id):
-            self.apply_theme(DEFAULT_THEME)
+        self.apply_theme(theme_id)
         self.setWindowIcon(muralis_icons.app_icon())
 
     def _set_theme(self, theme_id: str) -> None:
