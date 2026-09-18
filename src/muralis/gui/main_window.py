@@ -1,41 +1,47 @@
-"""Main window for Muralis GUI.
+"""Muralis's window.
 
-Modern Reasonix-style layout: a collapsible drawer (sidebar) with greyscale
-icons, a themed status bar with live info, and no menu bar — all settings live
-in the Settings page.
+Gesso's :class:`~gesso.ui.app.AppShell` provides the sidebar, the navigation,
+the content stack and the status bar. This adds only what Muralis knows about:
+the live status line, the daily update check, and the wallpaper actions.
+
+That is the whole of the migration. The shell used to be built here — drawer,
+brand, exclusive button group, page wrappers, collapse handling, icon
+re-tinting — and all of it is the same in every desktop application.
 """
 
-from typing import Optional
-from pathlib import Path
-from datetime import datetime, timedelta
+from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QPushButton,
-    QLabel,
-    QStackedWidget,
-    QStatusBar,
-    QFrame,
-    QButtonGroup,
-)
-from PySide6.QtCore import Qt, QTimer, QSize
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Optional
+
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+from gesso.ui.app import AppShell
+from gesso.ui.widgets import Card
 
 from muralis import __version__
 from muralis.context import APP, DEFAULT_WALLPAPER_DIR, config_path
 from muralis.i18n import t
 
-from .settings_tab import SettingsTab
+from . import icons as muralis_icons
+from .configview import config_view
 from .history_tab import HistoryTab
 from .preview_widget import PreviewWidget
-from .theme import ThemeManager, DEFAULT_THEME
-from .icons import app_icon, make_icon, render_color_pixmap, ICON_IDLE
-from .configview import config_view
+from .settings_tab import SettingsTab
+from .theme import DEFAULT_THEME, ThemeManager
 
-# ConfigParser-compatible read/write facade over the JSON config.
-_CONFIG = config_view
+#: Navigation entries: ``(key, icon name, label key, comment key)``.
+NAV_ITEMS = [
+    ("preview", "preview", "gui.nav.preview", "gui.page.preview_subtitle"),
+    ("history", "history", "gui.nav.history", "gui.page.history_subtitle"),
+    ("settings", "settings", "gui.nav.settings", "gui.page.settings_subtitle"),
+    ("about", "about", "gui.nav.about", ""),
+]
+
+#: How often the preview refreshes and the daily update is checked.
+_REFRESH_INTERVAL_MS = 60_000
 
 
 def _safe_mtime(path: Path) -> float:
@@ -46,52 +52,60 @@ def _safe_mtime(path: Path) -> float:
         return 0.0
 
 
-# Navigation entries: (key, icon name, translation key, page comment key)
-NAV_ITEMS = [
-    ("preview", "preview", "gui.nav.preview", "gui.page.preview_subtitle"),
-    ("history", "history", "gui.nav.history", "gui.page.history_subtitle"),
-    ("settings", "settings", "gui.nav.settings", "gui.page.settings_subtitle"),
-    ("about", "about", "gui.nav.about", ""),
-]
+class MainWindow(AppShell):
+    """Muralis's window: Gesso's shell, wired to Muralis's pages."""
 
-SIDEBAR_WIDTH_EXPANDED = 220
-SIDEBAR_WIDTH_COLLAPSED = 56
+    def __init__(
+        self,
+        spec: Any = APP,
+        *,
+        theme_manager: Any = None,
+        icons: Any = None,
+        translate: Any = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
+        # Constructed directly — by a test, or by an embedder — there is no
+        # bootstrap to supply icons or a translator, so default to Muralis's
+        # own rather than rendering blank buttons and untranslated labels.
+        super().__init__(
+            spec,
+            theme_manager=theme_manager,
+            icons=icons if icons is not None else muralis_icons.themed(theme_manager),
+            translate=translate if translate is not None else t,
+            parent=parent,
+        )
 
+        # Likewise there may be no manager yet.
+        if self.theme_manager is None:
+            self.theme_manager = ThemeManager(self)
 
-class MainWindow(QMainWindow):
-    """Main application window for Muralis."""
-
-    def __init__(self, parent=None):
-        """Initialize the main window."""
-        super().__init__(parent)
-
-        self.setWindowTitle(APP.display_name)
-        self.setWindowIcon(app_icon())
+        self.setWindowIcon(muralis_icons.app_icon())
         self.setMinimumSize(1000, 700)
         self.resize(1150, 780)
 
-        # Theme manager (applies the stored theme, seeded with defaults)
-        self.theme_manager = ThemeManager(self)
+        # Muralis has its own drawer glyph, and its own wording for what the
+        # drawer does — the shell's default is generic.
+        self.drawer_button.set_icon("drawer")
+        self.drawer_button.setToolTip(t("gui.nav.collapse"))
 
-        # Central widget
-        central_widget = QWidget()
-        central_widget.setObjectName("centralWidget")
-        self.setCentralWidget(central_widget)
-        root_layout = QHBoxLayout(central_widget)
-        root_layout.setContentsMargins(0, 0, 0, 0)
-        root_layout.setSpacing(0)
+        self.set_brand(t("gui.nav.brand"), t("gui.nav.brand_subtitle"))
+        self._build_pages()
+        self._build_refresh_timer()
 
-        # Left navigation drawer (collapsible)
-        self._sidebar_collapsed = False
-        self._build_sidebar(root_layout)
+        self._apply_stored_theme()
+        self.set_message(t("gui.status.ready"))
+        self.show_page("preview")
+        self._load_current_wallpaper()
+        self._update_status_bar()
 
-        # Content stack (pages switched by the drawer)
-        self.stack = QStackedWidget()
-        self.stack.setObjectName("contentStack")
-        root_layout.addWidget(self.stack, 1)
-
-        # Build pages
-        self.preview_widget = PreviewWidget(refresh_callback=self._refresh_wallpaper, parent=self)
+    # ------------------------------------------------------------------
+    # Layout
+    # ------------------------------------------------------------------
+    def _build_pages(self) -> None:
+        """Gesso's shell builds the navigation entry alongside each page."""
+        self.preview_widget = PreviewWidget(
+            refresh_callback=self._refresh_wallpaper, parent=self
+        )
         self.preview_widget.local_image_callback = self._set_local_image
         self.history_tab = HistoryTab(
             refresh_callback=self._refresh_wallpaper,
@@ -107,269 +121,108 @@ class MainWindow(QMainWindow):
         )
         self.about_page = self._build_about_page()
 
-        self.pages = [
-            (
-                "preview",
-                self._make_page(
-                    t("gui.nav.preview"),
-                    t("gui.page.preview_subtitle"),
-                    self.preview_widget,
-                    actions=self.preview_widget.action_buttons(),
-                ),
-            ),
-            (
-                "history",
-                self._make_page(
-                    t("gui.nav.history"),
-                    t("gui.page.history_subtitle"),
-                    self.history_tab,
-                    actions=self.history_tab.action_buttons(),
-                ),
-            ),
-            (
-                "settings",
-                self._make_page(
-                    t("gui.nav.settings"),
-                    t("gui.page.settings_subtitle"),
-                    self.settings_tab,
-                    actions=self.settings_tab.action_buttons(),
-                ),
-            ),
-            ("about", self._make_page(t("gui.nav.about"), "", self.about_page)),
-        ]
-        for _, page in self.pages:
-            self.stack.addWidget(page)
+        widgets = {
+            "preview": self.preview_widget,
+            "history": self.history_tab,
+            "settings": self.settings_tab,
+            "about": self.about_page,
+        }
 
-        # Create status bar with live info
-        self._build_status_bar()
-
-        # Apply the stored theme (after widgets exist)
-        self._apply_stored_theme()
-
-        # Setup auto-refresh timer (refreshes preview + checks daily update time)
-        self.refresh_timer = QTimer()
-        self.refresh_timer.timeout.connect(self._auto_refresh_preview)
-        self.refresh_timer.start(60000)  # every minute
-        self._last_daily_run = None
-
-        # Start on the preview page
-        self._show_page("preview")
-
-        # Load initial data
-        self._load_current_wallpaper()
-        self._update_status_bar()
-
-    # ------------------------------------------------------------------
-    # Layout construction
-    # ------------------------------------------------------------------
-    def _build_sidebar(self, root_layout: QHBoxLayout):
-        """Build the collapsible left-hand navigation drawer."""
-        self.sidebar = QFrame()
-        self.sidebar.setObjectName("sidebar")
-        self.sidebar.setFixedWidth(SIDEBAR_WIDTH_EXPANDED)
-
-        side_layout = QVBoxLayout(self.sidebar)
-        side_layout.setContentsMargins(12, 14, 12, 12)
-        side_layout.setSpacing(4)
-
-        # Top row: drawer toggle + app name
-        top_row = QHBoxLayout()
-        top_row.setSpacing(8)
-
-        self.drawer_btn = QPushButton()
-        self.drawer_btn.setObjectName("iconButton")
-        self.drawer_btn.setIcon(make_icon("drawer", ICON_IDLE, 20))
-        self.drawer_btn.setIconSize(QSize(20, 20))
-        self.drawer_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.drawer_btn.setToolTip(t("gui.nav.collapse"))
-        self.drawer_btn.clicked.connect(self._toggle_sidebar)
-        top_row.addWidget(self.drawer_btn)
-
-        self.brand_label = QLabel(t("gui.nav.brand"))
-        self.brand_label.setObjectName("brand")
-        top_row.addWidget(self.brand_label)
-
-        top_row.addStretch()
-        side_layout.addLayout(top_row)
-
-        self.brand_subtitle = QLabel(t("gui.nav.brand_subtitle"))
-        self.brand_subtitle.setObjectName("brandSubtitle")
-        self.brand_subtitle.setWordWrap(True)
-        side_layout.addWidget(self.brand_subtitle)
-
-        side_layout.addSpacing(12)
-
-        # Navigation buttons (mutually exclusive)
-        self.nav_group = QButtonGroup(self)
-        self.nav_group.setExclusive(True)
-
-        self.nav_buttons = {}
-        self.nav_meta = {}  # key -> (icon name, label)
-        for key, icon_name, label_key, _comment in NAV_ITEMS:
-            label = t(label_key)
-            button = QPushButton(label)
-            button.setObjectName("navButton")
-            button.setCheckable(True)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.setIcon(make_icon(icon_name, ICON_IDLE, 18))
-            button.setIconSize(QSize(18, 18))
-            button.toggled.connect(
-                lambda checked, b=button, n=icon_name: b.setIcon(
-                    make_icon(n, self._theme_accent() if checked else ICON_IDLE, 18)
-                )
+        for key, icon_name, label_key, comment_key in NAV_ITEMS:
+            widget = widgets[key]
+            actions = widget.action_buttons() if hasattr(widget, "action_buttons") else ()
+            self.add_page(
+                key,
+                t(label_key),
+                widget,
+                comment=t(comment_key) if comment_key else "",
+                icon=icon_name,
+                actions=actions,
             )
-            button.clicked.connect(lambda checked=False, k=key: self._show_page(k))
-            self.nav_group.addButton(button)
-            self.nav_buttons[key] = button
-            self.nav_meta[key] = (icon_name, label)
-            side_layout.addWidget(button)
-
-        side_layout.addStretch()
-
-        root_layout.addWidget(self.sidebar)
-
-    def _toggle_sidebar(self):
-        """Collapse or expand the drawer."""
-        self._set_sidebar_collapsed(not self._sidebar_collapsed)
-
-    def _set_sidebar_collapsed(self, collapsed: bool):
-        """Set the drawer collapsed state (icons only or icon + label)."""
-        self._sidebar_collapsed = collapsed
-        width = SIDEBAR_WIDTH_COLLAPSED if collapsed else SIDEBAR_WIDTH_EXPANDED
-        self.sidebar.setFixedWidth(width)
-
-        for button in self.nav_buttons.values():
-            button.setProperty("collapsed", collapsed)
-            button.style().unpolish(button)
-            button.style().polish(button)
-        for key, button in self.nav_buttons.items():
-            icon_name, label = self.nav_meta[key]
-            button.setText(label if not collapsed else "")
-            button.setToolTip("" if not collapsed else label)
-
-        self.brand_label.setVisible(not collapsed)
-        self.brand_subtitle.setVisible(not collapsed)
-
-        if collapsed:
-            self.drawer_btn.setToolTip(t("gui.nav.expand"))
-        else:
-            self.drawer_btn.setToolTip(t("gui.nav.collapse"))
 
     def _build_about_page(self) -> QWidget:
-        """Build the About page."""
+        """The About page: the logo, the version and two links."""
         page = QWidget()
         layout = QVBoxLayout(page)
         # Match the Settings content pane's indentation so all pages align.
         layout.setContentsMargins(0, 0, 0, 0)
 
-        card = QFrame()
-        card.setObjectName("card")
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(28, 28, 28, 28)
-        card_layout.setSpacing(8)
+        card = Card(margins=28, spacing=8)
 
-        # Application icon (full-color logo)
-        icon_label = QLabel()
-        icon_label.setPixmap(render_color_pixmap("muralis", 64))
-        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        card_layout.addWidget(icon_label)
+        logo = QLabel()
+        logo.setPixmap(muralis_icons.render_color_pixmap("muralis", 64))
+        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card.body.addWidget(logo)
 
         title = QLabel(t("gui.nav.brand"))
         title.setObjectName("displayTitle")
-        card_layout.addWidget(title)
+        card.body.addWidget(title)
 
         desc = QLabel(t("gui.about.desc"))
         desc.setWordWrap(True)
-        card_layout.addWidget(desc)
+        card.body.addWidget(desc)
 
         version = QLabel(t("gui.about.version", version=__version__))
         version.setObjectName("pageSubtitle")
-        card_layout.addWidget(version)
+        card.body.addWidget(version)
 
-        card_layout.addSpacing(8)
+        card.body.addSpacing(8)
 
-        github = QLabel(
-            f'<a href="https://github.com/quoxiom/muralis">' f"{t('gui.about.github')}</a>"
-        )
-        github.setObjectName("link")
-        github.setOpenExternalLinks(True)
-        card_layout.addWidget(github)
+        for url, label in (
+            ("https://github.com/quoxiom/muralis", t("gui.about.github")),
+            ("https://github.com/quoxiom/muralis/wiki", t("gui.about.docs")),
+        ):
+            link = QLabel(f'<a href="{url}">{label}</a>')
+            link.setObjectName("link")
+            link.setOpenExternalLinks(True)
+            card.body.addWidget(link)
 
-        docs = QLabel(
-            f'<a href="https://github.com/quoxiom/muralis/wiki">' f"{t('gui.about.docs')}</a>"
-        )
-        docs.setObjectName("link")
-        docs.setOpenExternalLinks(True)
-        card_layout.addWidget(docs)
-
-        card_layout.addStretch()
+        card.body.addStretch()
         layout.addWidget(card)
-
         return page
 
-    def _make_page(
-        self, title: str, comment: str, widget: QWidget, actions: Optional[list] = None
-    ) -> QWidget:
-        """Wrap a page widget with a header.
+    def set_sidebar_collapsed(self, collapsed: bool) -> None:
+        """Collapse the drawer, and retitle its button for what it will do."""
+        super().set_sidebar_collapsed(collapsed)
+        self.drawer_button.setToolTip(t("gui.nav.expand" if collapsed else "gui.nav.collapse"))
 
-        The comment (description) is placed in front of the view name, on the
-        same line. Optional ``actions`` buttons are placed right-aligned at the
-        end of the same header row.
-        """
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(24, 20, 24, 20)
-        layout.setSpacing(10)
+    # ------------------------------------------------------------------
+    # Theming
+    # ------------------------------------------------------------------
+    def _apply_stored_theme(self) -> None:
+        """Apply the theme saved in the config (default: reasonix)."""
+        theme_id = self._read_config().get("gui", "theme", fallback=DEFAULT_THEME)
+        if not self.apply_theme(theme_id):
+            self.apply_theme(DEFAULT_THEME)
+        self.setWindowIcon(muralis_icons.app_icon())
 
-        header_row = QHBoxLayout()
-        header_row.setSpacing(10)
-
-        header = QLabel(title)
-        header.setObjectName("pageHeader")
-        header_row.addWidget(header)
-
-        if comment:
-            comment_label = QLabel(comment)
-            comment_label.setObjectName("pageComment")
-            header_row.addWidget(comment_label)
-
-        header_row.addStretch()
-
-        if actions:
-            for action in actions:
-                header_row.addWidget(action)
-
-        layout.addLayout(header_row)
-
-        layout.addWidget(widget, 1)
-        return page
+    def _set_theme(self, theme_id: str) -> None:
+        """Apply a theme and persist the choice."""
+        if not self.apply_theme(theme_id):
+            return
+        self.setWindowIcon(muralis_icons.app_icon())
+        try:
+            config = self._read_config()
+            config.set("gui", "theme", theme_id)
+            config.save()
+        except OSError:
+            # A read-only config directory: the theme applies for this session.
+            pass
 
     # ------------------------------------------------------------------
     # Status bar
     # ------------------------------------------------------------------
-    def _build_status_bar(self):
-        """Build the status bar with live information."""
-        self.status_bar = QStatusBar()
-        self.setStatusBar(self.status_bar)
-
-        self.status_info = QLabel("")
-        self.status_info.setObjectName("statusInfo")
-        self.status_bar.addPermanentWidget(self.status_info)
-
-        self.status_bar.showMessage(t("gui.status.ready"))
-
     def _read_config(self):
-        """Read the config (JSON via ConfigManager facade)."""
-        return _CONFIG()
+        """Read the config (ConfigParser-compatible facade over JSON)."""
+        return config_view()
 
     def _provider_name(self, key: str) -> str:
         """Localized display name for a provider key."""
         localized = t(f"gui.provider.{key}")
         return key if localized == f"gui.provider.{key}" else localized
 
-    def _update_status_bar(self):
+    def _update_status_bar(self) -> None:
         """Refresh the status bar info (image, provider, daily update)."""
-        # Current image
         image_name = "—"
         if DEFAULT_WALLPAPER_DIR.exists():
             wallpapers = sorted(
@@ -378,13 +231,11 @@ class MainWindow(QMainWindow):
             if wallpapers:
                 image_name = wallpapers[0].name
 
-        # Provider
         config = self._read_config()
         provider = config.get("general", "provider", fallback="bing")
 
-        # Daily update status
-        timer_path = Path.home() / ".config/systemd/user/muralis.timer"
         sep = t("gui.statusbar.sep")
+        timer_path = Path.home() / ".config/systemd/user/muralis.timer"
         if timer_path.exists():
             fetch_time = self._next_fetch_time(timer_path)
             provider_display = self._provider_name(provider)
@@ -399,7 +250,7 @@ class MainWindow(QMainWindow):
             t("gui.statusbar.provider", name=self._provider_name(provider)),
             update_text,
         ]
-        self.status_info.setText(sep.join(parts))
+        self.set_info(sep.join(parts))
 
     @staticmethod
     def _next_fetch_time(timer_path: Path) -> str:
@@ -427,104 +278,51 @@ class MainWindow(QMainWindow):
         return candidate.strftime("%d %b %Y %H:%M")
 
     # ------------------------------------------------------------------
-    # Navigation
+    # Wallpaper actions
     # ------------------------------------------------------------------
-    def _show_page(self, key: str):
-        """Switch to the page identified by key."""
-        for index, (page_key, page) in enumerate(self.pages):
-            if page_key == key:
-                self.stack.setCurrentIndex(index)
-                self.nav_buttons[key].setChecked(True)
-                break
-
-    # ------------------------------------------------------------------
-    # Theming
-    # ------------------------------------------------------------------
-    def _theme_accent(self) -> str:
-        """The accent color of the currently applied theme."""
-        theme_id = self._read_config().get("gui", "theme", fallback=DEFAULT_THEME)
-        colors = self.theme_manager.load_colors(theme_id)
-        accent = colors.get("accent")
-        return accent if isinstance(accent, str) else ICON_IDLE
-
-    def _refresh_nav_icons(self):
-        """Re-tint the drawer icons (selected item uses the theme accent)."""
-        accent = self._theme_accent()
-        for key, button in self.nav_buttons.items():
-            icon_name = self.nav_meta[key][0]
-            button.setIcon(make_icon(icon_name, accent if button.isChecked() else ICON_IDLE, 18))
-
-    def _refresh_app_icon(self):
-        """Refresh the window icon (the full-color muralis logo)."""
-        self.setWindowIcon(app_icon())
-
-    def _apply_stored_theme(self):
-        """Apply the theme saved in the config (default: reasonix)."""
-        config = self._read_config()
-        theme_id = config.get("gui", "theme", fallback=DEFAULT_THEME)
-        if not self.theme_manager.apply(theme_id):
-            self.theme_manager.apply(DEFAULT_THEME)
-        self._refresh_app_icon()
-
-    def _set_theme(self, theme_id: str):
-        """Apply a theme and persist the choice in the config."""
-        if self.theme_manager.apply(theme_id):
-            self._refresh_nav_icons()
-            self._refresh_app_icon()
-            try:
-                config = self._read_config()
-                config.set("gui", "theme", theme_id)
-                config.save()
-            except OSError:
-                # Read-only config dir: theme applies for this session only
-                pass
-
-    # ------------------------------------------------------------------
-    # Actions
-    # ------------------------------------------------------------------
-    def _load_current_wallpaper(self):
+    def _load_current_wallpaper(self) -> None:
         """Load and display the current wallpaper."""
         self.preview_widget.load_current_wallpaper()
 
-    def _set_local_image(self, path: str):
+    def _set_local_image(self, path: str) -> None:
         """Set a user-picked local image as the wallpaper."""
         from muralis.app import MuralisApp
+
         from .dialogs import warning
 
-        self.status_bar.showMessage(t("gui.status.updating"))
+        self.set_message(t("gui.status.updating"))
         try:
             app = MuralisApp(str(config_path()))
             if app.set_local_image(path):
-                self.status_bar.showMessage(t("gui.preview.set_success"), 3000)
+                self.set_message(t("gui.preview.set_success"), 3000)
                 self._load_current_wallpaper()
                 self._update_status_bar()
             else:
-                self.status_bar.showMessage(t("gui.preview.set_failed"), 3000)
+                self.set_message(t("gui.preview.set_failed"), 3000)
                 warning(self, t("gui.dialog.error_title"), t("gui.preview.set_failed"))
         except Exception as e:
-            self.status_bar.showMessage(t("gui.status.error", error=str(e)), 5000)
+            self.set_message(t("gui.status.error", error=str(e)), 5000)
             warning(self, t("gui.dialog.error_title"), t("gui.preview.not_image"))
 
-    def _refresh_wallpaper(self):
-        """Manually refresh the wallpaper."""
+    def _refresh_wallpaper(self) -> None:
+        """Fetch and apply a new wallpaper."""
         from muralis.app import MuralisApp
 
-        self.status_bar.showMessage(t("gui.status.updating"))
-
+        self.set_message(t("gui.status.updating"))
         try:
             app = MuralisApp(str(config_path()))
             if app.run_once():
-                self.status_bar.showMessage(t("gui.status.success"), 3000)
+                self.set_message(t("gui.status.success"), 3000)
                 self._load_current_wallpaper()
                 self.history_tab.refresh_history()
                 self._update_status_bar()
             else:
-                self.status_bar.showMessage(t("gui.status.failed"), 3000)
+                self.set_message(t("gui.status.failed"), 3000)
                 from .dialogs import warning
 
                 warning(self, t("gui.dialog.error_title"), t("gui.dialog.failed_update"))
         except Exception as e:
-            self.status_bar.showMessage(t("gui.status.error", error=str(e)), 5000)
+            self.set_message(t("gui.status.error", error=str(e)), 5000)
             from .dialogs import critical
 
             critical(
@@ -533,12 +331,33 @@ class MainWindow(QMainWindow):
                 t("gui.dialog.failed_update_detail", error=str(e)),
             )
 
-    def _auto_refresh_preview(self):
-        """Auto-refresh the preview; also trigger the daily scheduled update."""
+    def _setup_auto_update_scheduler(self, enable: bool) -> None:
+        """Install or remove the background (systemd) daily timer."""
+        from muralis.app import MuralisApp
+        from muralis.scheduler import SchedulerManager
+
+        app = MuralisApp(str(config_path()))
+        scheduler = SchedulerManager(app.config)
+        if enable:
+            scheduler.setup()
+        else:
+            scheduler.disable()
+
+    # ------------------------------------------------------------------
+    # Periodic refresh
+    # ------------------------------------------------------------------
+    def _build_refresh_timer(self) -> None:
+        """Refresh the preview once a minute, and check the daily update."""
+        self._last_daily_run: Optional[str] = None
+        self.refresh_timer = QTimer(self)
+        self.refresh_timer.timeout.connect(self._auto_refresh_preview)
+        self.refresh_timer.start(_REFRESH_INTERVAL_MS)
+
+    def _auto_refresh_preview(self) -> None:
         self.preview_widget.refresh_preview()
         self._check_scheduled_update()
 
-    def _check_scheduled_update(self):
+    def _check_scheduled_update(self) -> None:
         """Run the wallpaper update if auto-update is on and the time matches."""
         from datetime import date
 
@@ -557,19 +376,3 @@ class MainWindow(QMainWindow):
                 self._refresh_wallpaper()
         except (ValueError, AttributeError):
             pass
-
-    def _setup_auto_update_scheduler(self, enable: bool):
-        """Install or remove the background (systemd) daily timer."""
-        from muralis.app import MuralisApp
-        from muralis.scheduler import SchedulerManager
-
-        app = MuralisApp(str(config_path()))
-        sched = SchedulerManager(app.config)
-        if enable:
-            sched.setup()
-        else:
-            sched.disable()
-
-    def closeEvent(self, event):
-        """Close the window and quit the application."""
-        event.accept()
