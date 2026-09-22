@@ -60,8 +60,13 @@ class ThemeManager(_ThemeManager):
     # ------------------------------------------------------------------
     def list_themes(self) -> List[str]:
         """Available theme ids, sorted. (Gesso calls this ``names``.)"""
-        return self.names()
+        # Gesso re-exports ``ThemeManager`` lazily through a module-level
+        # ``__getattr__`` (PEP 562), which mypy resolves to ``Any``. Binding the
+        # call to an annotated local keeps the declared return type honest.
+        names: List[str] = self.names()
+        return names
 
     def load_colors(self, theme_id: str) -> Dict[str, str]:
         """A theme's resolved palette. (Gesso returns a whole ``Theme``.)"""
-        return self.load(theme_id).colors
+        colors: Dict[str, str] = self.load(theme_id).colors
+        return colors

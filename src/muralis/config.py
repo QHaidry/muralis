@@ -60,14 +60,26 @@ MURALIS_SCHEMA = Schema(
             "general",
             title="General",
             options=(
-                Option("provider", str, "bing", "Default wallpaper provider.",
-                       choices=ALL_PROVIDERS),
+                Option(
+                    "provider", str, "bing", "Default wallpaper provider.", choices=ALL_PROVIDERS
+                ),
                 Option("auto_update", bool, True, "Update the wallpaper on a schedule."),
-                Option("update_interval", int, 86400, "Seconds between updates.",
-                       minimum=300, maximum=604800),
+                Option(
+                    "update_interval",
+                    int,
+                    86400,
+                    "Seconds between updates.",
+                    minimum=300,
+                    maximum=604800,
+                ),
                 Option("randomize_provider", bool, False, "Pick a random provider each day."),
-                Option("fallback_provider", str, "bing", "Used when the primary fails.",
-                       choices=ALL_PROVIDERS),
+                Option(
+                    "fallback_provider",
+                    str,
+                    "bing",
+                    "Used when the primary fails.",
+                    choices=ALL_PROVIDERS,
+                ),
                 Option("timezone", str, "UTC", "Timezone for scheduling."),
                 Option("offline_mode", bool, False, "Never make network requests."),
                 Option("network_timeout", int, 30, "Network timeout, in seconds."),
@@ -78,18 +90,29 @@ MURALIS_SCHEMA = Schema(
             "image",
             title="Image",
             options=(
-                Option("resolution", str, "3840x2160", "Requested wallpaper size.",
-                       pattern=_RESOLUTION),
+                Option(
+                    "resolution", str, "3840x2160", "Requested wallpaper size.", pattern=_RESOLUTION
+                ),
                 Option("apply_effects", bool, False, "Apply an image effect."),
                 Option("effect_type", str, "none", "Which effect to apply.", choices=_EFFECTS),
                 Option("jpeg_quality", int, 90, "JPEG quality.", minimum=1, maximum=100),
-                Option("fit_mode", str, "zoom", "How the image is fitted.",
-                       choices=["zoom", "fill", "fit", "stretch", "center"]),
+                Option(
+                    "fit_mode",
+                    str,
+                    "zoom",
+                    "How the image is fitted.",
+                    choices=["zoom", "fill", "fit", "stretch", "center"],
+                ),
                 Option("upscale_image", bool, False, "Upscale small images."),
                 Option("upscale_factor", int, 2, "Upscale multiplier."),
                 Option("maintain_aspect_ratio", bool, True, "Preserve the aspect ratio."),
-                Option("image_format", str, "jpg", "Saved image format.",
-                       choices=["jpg", "png", "webp"]),
+                Option(
+                    "image_format",
+                    str,
+                    "jpg",
+                    "Saved image format.",
+                    choices=["jpg", "png", "webp"],
+                ),
                 Option("color_profile", str, "auto", "Colour profile handling."),
                 Option("watermark", bool, False, "Overlay a watermark."),
                 Option("watermark_position", str, "bottom-right", "Watermark corner."),
@@ -110,8 +133,7 @@ MURALIS_SCHEMA = Schema(
                 Option("auto_tag", bool, True, "Tag downloads automatically."),
                 Option("sync_to_cloud", bool, False, "Sync the library to cloud storage."),
                 Option("sync_path", str, "", "Cloud sync location."),
-                Option("compression_level", int, 6, "Compression level.",
-                       minimum=0, maximum=9),
+                Option("compression_level", int, 6, "Compression level.", minimum=0, maximum=9),
             ),
         ),
         Section(
@@ -119,12 +141,24 @@ MURALIS_SCHEMA = Schema(
             title="Scheduling",
             options=(
                 Option("update_time", str, "09:00", "Time of day to update.", pattern=_TIME),
-                Option("random_delay_minutes", int, 30, "Random delay before updating.",
-                       minimum=0, maximum=120),
+                Option(
+                    "random_delay_minutes",
+                    int,
+                    30,
+                    "Random delay before updating.",
+                    minimum=0,
+                    maximum=120,
+                ),
                 Option("update_on_boot", bool, False, "Update at login."),
                 Option("update_on_wake", bool, True, "Update after resuming."),
-                Option("minimum_interval_hours", int, 6, "Minimum hours between updates.",
-                       minimum=1, maximum=24),
+                Option(
+                    "minimum_interval_hours",
+                    int,
+                    6,
+                    "Minimum hours between updates.",
+                    minimum=1,
+                    maximum=24,
+                ),
                 Option("skip_on_battery", bool, False, "Skip when on battery."),
                 Option("only_on_wifi", bool, True, "Only update on Wi-Fi."),
             ),
@@ -161,8 +195,13 @@ MURALIS_SCHEMA = Schema(
             "logging",
             title="Logging",
             options=(
-                Option("log_level", str, "INFO", "Logging verbosity.",
-                       choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
+                Option(
+                    "log_level",
+                    str,
+                    "INFO",
+                    "Logging verbosity.",
+                    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+                ),
                 Option("log_file", str, "~/.local/share/muralis/muralis.log", "Log file."),
                 Option("log_rotation_days", int, 30, "Days before a log is rotated."),
                 Option("debug_mode", bool, False, "Enable debug logging."),
@@ -181,10 +220,8 @@ MURALIS_SCHEMA = Schema(
                 Option("config_version", int, 2, "Schema version, for migrations."),
                 Option("experimental_features", bool, False, "Enable unfinished features."),
                 Option("cache_enabled", bool, True, "Cache provider responses."),
-                Option("cache_size_mb", int, 500, "Cache size, in MB.",
-                       minimum=100, maximum=5000),
-                Option("parallel_downloads", int, 1, "Concurrent downloads.",
-                       minimum=1, maximum=5),
+                Option("cache_size_mb", int, 500, "Cache size, in MB.", minimum=100, maximum=5000),
+                Option("parallel_downloads", int, 1, "Concurrent downloads.", minimum=1, maximum=5),
                 Option("max_connections", int, 5, "Maximum concurrent connections."),
             ),
         ),
@@ -228,7 +265,7 @@ class _SectionView(dict):
         self._manager.set_value(self._section, key, value, save=False)
         super().__setitem__(key, self._manager._store.get(self._section, {}).get(key))
 
-    def update(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[override]
+    def update(self, *args: Any, **kwargs: Any) -> None:
         for key, value in dict(*args, **kwargs).items():
             self[key] = value
 
@@ -248,7 +285,12 @@ class ConfigManager:
     # Class-level cache: resolved path -> instance
     _instances: Dict[str, "ConfigManager"] = {}
 
-    def __new__(cls, config_path: Optional[str] = None, **kwargs: Any):
+    # The Gesso store backing this manager; assigned in ``__init__``. Declared
+    # here so ``_SectionView`` (defined above) and the cached-instance branch
+    # can use it before mypy sees the assignment.
+    _store: ConfigStore
+
+    def __new__(cls, config_path: Optional[str] = None, **kwargs: Any) -> ConfigManager:
         """Create or return the instance for a given config path.
 
         The format participates in the cache key, so asking for the same path
@@ -293,9 +335,7 @@ class ConfigManager:
     # Paths
     # ------------------------------------------------------------------
     @staticmethod
-    def _resolve_path(
-        config_path: Optional[str] = None, format: Optional[str] = None
-    ) -> Path:
+    def _resolve_path(config_path: Optional[str] = None, format: Optional[str] = None) -> Path:
         """Work out which file to use.
 
         An explicit path wins; otherwise the application context decides, and

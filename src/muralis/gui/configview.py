@@ -7,10 +7,13 @@ and section subscripting), so this module is just a thin factory returning a
 ``ConfigManager`` for the app config path.
 """
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from muralis.config import ConfigManager
 
 
-def config_view(config_path: Optional[str] = None):
+def config_view(config_path: Optional[str] = None) -> "ConfigManager":
     """Return a ``ConfigManager`` for the app config.
 
     Args:

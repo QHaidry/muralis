@@ -192,8 +192,9 @@ def test_run_gui_delegates_to_gesso(monkeypatch):
 
     captured = {}
 
-    def fake_run_app(spec, *, shell_factory=None, **kwargs):
+    def fake_run_app(spec, build=None, *, shell_factory=None, **kwargs):
         captured["spec"] = spec
+        captured["build"] = build
         captured["shell_factory"] = shell_factory
         captured["kwargs"] = kwargs
         return 0
@@ -211,4 +212,54 @@ def test_run_gui_delegates_to_gesso(monkeypatch):
     # Muralis's icons are appended to Gesso's, not substituted for them.
     assert icons.ICONS_DIR in captured["kwargs"]["icon_dirs"]
     assert captured["kwargs"]["user_theme_dir"] is not None
-    assert captured["kwargs"]["window_icon"] is not None
+
+    # The logo is rendered by ``build``, which Gesso calls *after* it has built
+    # the QApplication. It must not arrive as ``window_icon=``: an argument is
+    # evaluated before the application exists, and a QPixmap cannot be
+    # constructed before then.
+    assert callable(captured["build"])
+    assert "window_icon" not in captured["kwargs"]
+
+
+def test_the_entry_point_starts_in_a_fresh_process(tmp_path):
+    """Run the entry point in a new interpreter, with no application yet.
+
+    A fresh process is the only honest place to check this. In-process the
+    suite has already built a ``QApplication`` (pytest-qt), so a ``QPixmap``
+    constructed too early would not abort — which is precisely the situation
+    the user hits and the suite missed: the logo was rendered before the
+    application existed.
+
+    ``XDG_CONFIG_HOME``/``XDG_DATA_HOME`` point at a throwaway profile so the
+    run cannot touch the developer's real configuration, and
+    ``QApplication.exec`` is replaced so the event loop returns rather than
+    blocking the suite.
+    """
+    import os
+    import subprocess
+    import sys
+
+    script = (
+        "import os, sys\n"
+        "os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')\n"
+        "from PySide6.QtWidgets import QApplication\n"
+        "QApplication.exec = lambda self: 0\n"
+        "from muralis.gui import run_gui\n"
+        "sys.exit(run_gui())\n"
+    )
+    env = dict(
+        os.environ,
+        QT_QPA_PLATFORM="offscreen",
+        XDG_CONFIG_HOME=str(tmp_path / "config"),
+        XDG_DATA_HOME=str(tmp_path / "data"),
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+    assert result.returncode == 0, result.stderr

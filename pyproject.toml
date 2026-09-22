@@ -85,7 +85,11 @@ muralis = [
 ]
 
 [tool.setuptools.dynamic]
-version = { attr = "muralis.__version__" }
+# Point at the leaf module holding the literal (src/muralis/_version.py) rather
+# than the package. setuptools reads this attribute statically via AST and does
+# not import `muralis`; importing the package would pull runtime dependencies
+# (requests, PySide6, gesso) that are absent from pip's isolated build env.
+version = { attr = "muralis._version.__version__" }
 
 [tool.black]
 line-length = 100

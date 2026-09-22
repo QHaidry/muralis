@@ -103,9 +103,7 @@ class MainWindow(AppShell):
     # ------------------------------------------------------------------
     def _build_pages(self) -> None:
         """Gesso's shell builds the navigation entry alongside each page."""
-        self.preview_widget = PreviewWidget(
-            refresh_callback=self._refresh_wallpaper, parent=self
-        )
+        self.preview_widget = PreviewWidget(refresh_callback=self._refresh_wallpaper, parent=self)
         self.preview_widget.local_image_callback = self._set_local_image
         self.history_tab = HistoryTab(
             refresh_callback=self._refresh_wallpaper,

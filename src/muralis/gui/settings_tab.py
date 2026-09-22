@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTime
 
-from muralis.config import available_config_formats
+from muralis.config import ConfigManager, available_config_formats
 from muralis.context import config_path as app_config_path
 from muralis.i18n import t
 from muralis.providers import ALL_PROVIDERS
@@ -485,9 +485,7 @@ class SettingsTab(QWidget):
         # optional dependencies are present.
         formats = available_config_formats()
         if len(formats) > 1:
-            format_widget, self.format_buttons = self._segmented(
-                formats, cols=3, values=formats
-            )
+            format_widget, self.format_buttons = self._segmented(formats, cols=3, values=formats)
             self._check_value(self.format_buttons, self._config_format(), fallback=formats[0])
             for button, fmt in zip(self.format_buttons, formats):
                 button.toggled.connect(lambda checked, f=fmt: self._on_format_clicked(checked, f))
@@ -535,12 +533,18 @@ class SettingsTab(QWidget):
             return False
 
     def _available_themes(self) -> List[str]:
+        """Theme ids whose palette actually loads.
+
+        Gesso's ``names``/``load`` are used rather than Muralis's older
+        ``list_themes``/``load_colors`` wrappers: the bootstrap hands the window
+        Gesso's own manager, which does not carry the wrappers.
+        """
         if self.theme_manager is None:
             return [DEFAULT_THEME]
         return [
             theme_id
-            for theme_id in self.theme_manager.list_themes()
-            if self.theme_manager.load_colors(theme_id)
+            for theme_id in self.theme_manager.names()
+            if self.theme_manager.load(theme_id).colors
         ]
 
     def _check_value(
@@ -617,7 +621,7 @@ class SettingsTab(QWidget):
 
     # ------------------------------------------------------------------
     # Persistence    # ------------------------------------------------------------------
-    def _load_raw(self):
+    def _load_raw(self) -> ConfigManager:
         """ConfigParser-compatible view over the JSON config."""
         from .configview import config_view
 
