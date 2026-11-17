@@ -3,7 +3,7 @@
 
 set -e
 
-echo "🎨 Installing Muralis - a small wallpaper utility by Quoxiom"
+echo "🎨 Installing Muralis - a small wallpaper utility by Qamber Haidry"
 
 # Check Python version
 python_version=$(python3 --version 2>&1 | grep -Po '(?<=Python )\d+\.\d+')

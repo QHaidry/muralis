@@ -1,8 +1,12 @@
 """Art Institute of Chicago provider - Museum artwork."""
 
-from typing import Dict, Optional, Any
+import logging
 import random
+from typing import Any, Dict, Optional
+
 from .base import WallpaperProvider
+
+logger = logging.getLogger(__name__)
 
 
 class ArtInstituteProvider(WallpaperProvider):
@@ -40,7 +44,7 @@ class ArtInstituteProvider(WallpaperProvider):
             return None
 
         except Exception as e:
-            print(f"Error fetching Art Institute artwork: {e}")
+            logger.error(f"Error fetching Art Institute artwork: {e}")
             return None
 
     def get_metadata(self) -> Dict:

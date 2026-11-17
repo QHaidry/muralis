@@ -1,7 +1,11 @@
 """Bing wallpaper provider with 4K/UHD support."""
 
-from typing import Dict, Optional, List
+import logging
+from typing import Dict, List, Optional
+
 from .base import WallpaperProvider
+
+logger = logging.getLogger(__name__)
 
 
 class BingProvider(WallpaperProvider):
@@ -61,7 +65,7 @@ class BingProvider(WallpaperProvider):
             return None
 
         except Exception as e:
-            print(f"Error fetching Bing wallpaper: {e}")
+            logger.error(f"Error fetching Bing wallpaper: {e}")
             return None
 
     def get_metadata(self) -> Dict:

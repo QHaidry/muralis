@@ -128,15 +128,17 @@ class MuralisApp:
         Returns:
             Provider instance
         """
+        # An explicit choice always wins: `--provider nasa` that silently
+        # honours `randomize_provider` is indistinguishable from a bug.
         if not provider_name:
             provider_name = self.config.get_str("general", "provider", "bing")
 
-        # Randomize provider if enabled
-        if self.config.get_bool("general", "randomize_provider", False):
-            import random
+            # Randomize provider if enabled
+            if self.config.get_bool("general", "randomize_provider", False):
+                import random
 
-            provider_name = random.choice(ALL_PROVIDERS)
-            self.logger.info(f"🎲 Randomized provider: {provider_name}")
+                provider_name = random.choice(ALL_PROVIDERS)
+                self.logger.info(f"🎲 Randomized provider: {provider_name}")
 
         # Get provider
         try:

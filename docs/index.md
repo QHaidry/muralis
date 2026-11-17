@@ -29,8 +29,13 @@ Cinnamon desktops.
 ## Quick start
 
 ```bash
-# Install
-pip install muralis
+# Install the framework Muralis is built on (not on PyPI yet)
+pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
+
+# Install Muralis
+git clone https://github.com/QHaidry/muralis.git
+cd muralis
+pip install -e .
 
 # Download and set today's wallpaper
 muralis --once
@@ -46,4 +51,4 @@ muralis --set-daily
 
 ---
 
-**Muralis** — a small wallpaper utility by Quoxiom.
+**Muralis** — a small wallpaper utility by Qamber Haidry.

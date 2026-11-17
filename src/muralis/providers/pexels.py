@@ -1,33 +1,45 @@
 """Pexels wallpaper provider - Free stock photos."""
 
+import logging
 from typing import Dict, Optional
+
 from .base import WallpaperProvider
+
+logger = logging.getLogger(__name__)
 
 
 class PexelsProvider(WallpaperProvider):
     """Fetches curated photos from Pexels."""
 
-    # Public demo key - rate limited to ~200 requests/hour.
-    # Users can register their own at https://www.pexels.com/api/.
-    API_KEY = "563492ad6f91700001000001d6d5e3b5e5a14e8b8b9b9b9b9b9b9b9b"
+    # Pexels does not publish a demo key, so there is nothing sensible to ship
+    # as a default: an unconfigured Pexels is reported as such rather than
+    # spending a request on a key the API will reject with 401.
     API_URL = "https://api.pexels.com/v1/curated"
 
     @property
     def name(self) -> str:
         return "pexels"
 
-    def _get_api_key(self) -> str:
-        """Return the configured key, falling back to the public demo key."""
+    def _get_api_key(self) -> Optional[str]:
+        """Return the configured key, or None when the user has not set one."""
         if self.config:
             key = self.config.get_api_key("pexels")
             if key and key.strip():
                 return key.strip()
-        return self.API_KEY
+        return None
 
     def get_daily_url(self, resolution: str = "1920x1080") -> Optional[str]:
         """Get random curated photo from Pexels."""
+        api_key = self._get_api_key()
+        if not api_key:
+            logger.warning(
+                "Pexels needs a free API key: register at https://www.pexels.com/api "
+                "and add it with `muralis --set-key pexels YOUR_KEY`."
+            )
+            return None
+
         try:
-            headers = {"Authorization": self._get_api_key()}
+            headers = {"Authorization": api_key}
             params = {"per_page": 30}
 
             response = self._get(self.API_URL, headers=headers, params=params, timeout=15)
@@ -46,20 +58,21 @@ class PexelsProvider(WallpaperProvider):
                     url = src.get(size)
                     if isinstance(url, str) and url:
                         return url
-                url = src.get("original")
-                if isinstance(url, str):
-                    return url
                 return None
             return None
 
         except Exception as e:
-            print(f"Error fetching Pexels photo: {e}")
+            logger.error(f"Error fetching Pexels photo: {e}")
             return None
 
     def get_metadata(self) -> Dict:
         """Get Pexels photo metadata."""
+        api_key = self._get_api_key()
+        if not api_key:
+            return {"title": "Pexels Photo", "copyright": "Pexels (API key required)"}
+
         try:
-            headers = {"Authorization": self._get_api_key()}
+            headers = {"Authorization": api_key}
             response = self._get(self.API_URL, headers=headers, params={"per_page": 1})
             response.raise_for_status()
             data = response.json()
@@ -72,6 +85,6 @@ class PexelsProvider(WallpaperProvider):
                     "photographer_url": photo.get("photographer_url", ""),
                     "provider": "Pexels",
                 }
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Error fetching Pexels metadata: {e}")
         return {"title": "Pexels Photo", "copyright": "Pexels"}

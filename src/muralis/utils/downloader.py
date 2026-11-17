@@ -11,9 +11,11 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from muralis.context import USER_AGENT
 from muralis.i18n import t
 
-DEFAULT_USER_AGENT = "Muralis/0.4.0 (+https://quoxiom.com)"
+#: Sent only when the caller supplies neither headers nor a configured session.
+DEFAULT_USER_AGENT = USER_AGENT
 
 
 def download_image(
@@ -34,17 +36,22 @@ def download_image(
         session: Optional ``requests.Session`` to use (enables proxy/SSL/UA
             configuration from the caller). A fresh session is created when
             omitted.
-        headers: Optional extra request headers (merged with the default
-            user-agent).
+        headers: Optional extra request headers. When omitted, the session's
+            own ``User-Agent`` is left alone — it was built from the user's
+            ``networking.user_agent`` setting, and overwriting it here would
+            silently ignore that setting.
 
     Returns:
         bool: True if successful, False otherwise
     """
-    request_headers = {"User-Agent": DEFAULT_USER_AGENT}
+    session = session or requests.Session()
+    request_headers: dict = {}
+    if session.headers.get("User-Agent") in (None, "", requests.utils.default_user_agent()):
+        # Nothing meaningful configured: identify ourselves properly.
+        request_headers["User-Agent"] = DEFAULT_USER_AGENT
     if headers:
         request_headers.update(headers)
 
-    session = session or requests.Session()
     save_path_obj = Path(save_path)
 
     for attempt in range(retries):

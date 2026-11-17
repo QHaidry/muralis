@@ -44,6 +44,13 @@ The package is published on PyPI. For the command-line interface:
 pip install muralis
 ```
 
+Muralis needs [Gesso](https://github.com/QHaidry/gesso), which is not on PyPI
+yet — install it before anything else:
+
+```bash
+pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
+```
+
 To add the graphical interface:
 
 ```bash
@@ -53,10 +60,11 @@ pip install "muralis[gui]"
 ### Method 2 — from source (editable, for development)
 
 ```bash
-git clone https://github.com/quoxiom/muralis.git
+git clone https://github.com/QHaidry/muralis.git
 cd muralis
 python -m venv venv
 source venv/bin/activate
+pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 pip install -e ".[dev]"
 
 # Run the test suite
@@ -66,14 +74,15 @@ pytest tests/
 ### Method 3 — using pipx (isolated)
 
 ```bash
-pipx install git+https://github.com/quoxiom/muralis.git
+pipx install git+https://github.com/QHaidry/muralis.git
+pipx inject muralis "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 muralis --once
 ```
 
 ### Method 4 — automated install script
 
 ```bash
-git clone https://github.com/quoxiom/muralis.git
+git clone https://github.com/QHaidry/muralis.git
 cd muralis
 chmod +x scripts/install.sh
 ./scripts/install.sh
@@ -225,4 +234,4 @@ pip uninstall muralis # when installed via pip
 
 ---
 
-**Muralis** — a small wallpaper utility by Quoxiom.
+**Muralis** — a small wallpaper utility by Qamber Haidry.

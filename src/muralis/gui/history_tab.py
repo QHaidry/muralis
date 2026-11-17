@@ -1,6 +1,5 @@
 """History tab for Muralis GUI."""
 
-from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -16,30 +15,9 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 
-from muralis.context import DEFAULT_WALLPAPER_DIR
 from muralis.i18n import t
 
-MODIFIED_TIME_FORMAT = "%d %b %Y %H:%M:%S"
-
-
-def _safe_mtime(path: Path) -> float:
-    try:
-        return path.stat().st_mtime
-    except OSError:
-        return 0.0
-
-
-def _provider_name() -> str:
-    """Localized label for the configured provider."""
-    provider = "bing"
-    try:
-        from .configview import config_view
-
-        provider = config_view().get("general", "provider", fallback="bing")
-    except Exception:
-        pass
-    localized = t(f"gui.provider.{provider}")
-    return provider if localized.startswith("gui.provider") else localized
+from . import support
 
 
 class _Thumb(QFrame):
@@ -70,10 +48,12 @@ class _Thumb(QFrame):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def _build_tooltip(self) -> str:
-        stat = self._path.stat()
-        size_kb = stat.st_size / 1024
-        downloaded = datetime.fromtimestamp(stat.st_mtime).strftime(MODIFIED_TIME_FORMAT)
-        provider = _provider_name()
+        try:
+            size_kb = self._path.stat().st_size / 1024
+        except OSError:
+            size_kb = 0.0
+        downloaded = support.formatted_mtime(self._path)
+        provider = support.provider_name(support.configured_provider())
         return (
             f"{t('gui.preview.tooltip.name', name=self._path.name)}\n"
             f"{t('gui.preview.tooltip.downloaded', time=downloaded)}\n"
@@ -171,20 +151,13 @@ class HistoryTab(QWidget):
     def refresh_history(self):
         self._clear_thumbnails()
 
-        wallpaper_dir = DEFAULT_WALLPAPER_DIR
-        if not wallpaper_dir.exists():
-            no_wallpapers = QLabel(t("gui.history.empty"))
-            no_wallpapers.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.thumbnails_layout.addWidget(no_wallpapers, 0, 0)
-            return
-
-        wallpapers = sorted(
-            wallpaper_dir.glob("muralis_*.jpg"),
-            key=_safe_mtime,
-            reverse=True,
-        )
+        folder = support.wallpaper_dir()
+        wallpapers = support.list_wallpapers(folder)
         if not wallpapers:
-            no_wallpapers = QLabel(t("gui.history.empty_short"))
+            # "You have not downloaded anything yet" and "that folder is not
+            # there" are different situations and deserve different wording.
+            message = "gui.history.empty" if not folder.exists() else "gui.history.empty_short"
+            no_wallpapers = QLabel(t(message))
             no_wallpapers.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.thumbnails_layout.addWidget(no_wallpapers, 0, 0)
             return

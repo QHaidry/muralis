@@ -22,10 +22,11 @@ from gesso.ui.app import AppShell
 from gesso.ui.widgets import Card
 
 from muralis import __version__
-from muralis.context import APP, DEFAULT_WALLPAPER_DIR, config_path
+from muralis.context import APP, config_path, systemd_unit
 from muralis.i18n import t
 
 from . import icons as muralis_icons
+from . import support
 from .configview import config_view
 from .history_tab import HistoryTab
 from .preview_widget import PreviewWidget
@@ -42,14 +43,6 @@ NAV_ITEMS = [
 
 #: How often the preview refreshes and the daily update is checked.
 _REFRESH_INTERVAL_MS = 60_000
-
-
-def _safe_mtime(path: Path) -> float:
-    """Modified time, tolerating files that vanish between glob and stat."""
-    try:
-        return path.stat().st_mtime
-    except OSError:
-        return 0.0
 
 
 class MainWindow(AppShell):
@@ -167,8 +160,8 @@ class MainWindow(AppShell):
         card.body.addSpacing(8)
 
         for url, label in (
-            ("https://github.com/quoxiom/muralis", t("gui.about.github")),
-            ("https://github.com/quoxiom/muralis/wiki", t("gui.about.docs")),
+            ("https://github.com/QHaidry/muralis", t("gui.about.github")),
+            ("https://qhaidry.github.io/muralis/", t("gui.about.docs")),
         ):
             link = QLabel(f'<a href="{url}">{label}</a>')
             link.setObjectName("link")
@@ -195,7 +188,7 @@ class MainWindow(AppShell):
         Muralis's own look rather than a neutral one. There is therefore no
         second call to make here.
         """
-        theme_id = self._read_config().get("gui", "theme", fallback=DEFAULT_THEME)
+        theme_id = self._read_config().get_theme() or DEFAULT_THEME
         self.apply_theme(theme_id)
         self.setWindowIcon(muralis_icons.app_icon())
 
@@ -221,24 +214,20 @@ class MainWindow(AppShell):
 
     def _provider_name(self, key: str) -> str:
         """Localized display name for a provider key."""
-        localized = t(f"gui.provider.{key}")
-        return key if localized == f"gui.provider.{key}" else localized
+        return support.provider_name(key)
 
     def _update_status_bar(self) -> None:
         """Refresh the status bar info (image, provider, daily update)."""
         image_name = "—"
-        if DEFAULT_WALLPAPER_DIR.exists():
-            wallpapers = sorted(
-                DEFAULT_WALLPAPER_DIR.glob("muralis_*.jpg"), key=_safe_mtime, reverse=True
-            )
-            if wallpapers:
-                image_name = wallpapers[0].name
+        wallpapers = support.list_wallpapers()
+        if wallpapers:
+            image_name = wallpapers[0].name
 
         config = self._read_config()
         provider = config.get("general", "provider", fallback="bing")
 
         sep = t("gui.statusbar.sep")
-        timer_path = Path.home() / ".config/systemd/user/muralis.timer"
+        timer_path = systemd_unit("muralis.timer")
         if timer_path.exists():
             fetch_time = self._next_fetch_time(timer_path)
             provider_display = self._provider_name(provider)

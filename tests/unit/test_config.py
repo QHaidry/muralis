@@ -89,6 +89,39 @@ class TestConfigManager:
     def test_validate_is_quiet_for_a_valid_config(self):
         assert self.config.validate() == []
 
+    def test_the_theme_lives_in_the_schema(self):
+        """A key outside the schema is stored, but `validate()` flags it forever.
+
+        The GUI has always written ``gui.theme``; until the schema knew about
+        ``gui``, every run printed an "unknown section" warning the user could
+        not do anything about.
+        """
+        self.config.set("gui", "theme", "light")
+        assert self.config.validate() == []
+        assert self.config.get_theme() == "light"
+
+    def test_display_shows_values_not_just_section_headers(self, capsys):
+        """Regression: `muralis --show-config` printed empty sections.
+
+        A nesting guard sat inside the per-setting loop, so every scalar was
+        skipped and only the headers survived.
+        """
+        self.config.display()
+
+        out = capsys.readouterr().out
+        assert "[general]" in out
+        assert "provider" in out
+        assert "bing" in out
+        assert "3840x2160" in out
+
+    def test_display_masks_secrets_but_only_partially(self, capsys):
+        self.config.set("api_keys", "unsplash_key", "abcdefghijklmnopqrstuvwxyz123456")
+        self.config.display()
+
+        out = capsys.readouterr().out
+        assert "abcdefghijklmnopqrstuvwxyz123456" not in out
+        assert "abcd...3456" in out
+
     def test_section_view_writes_through_to_the_store(self):
         """`config["image"]["jpeg_quality"] = 75` must persist, typed."""
         view = self.config["image"]

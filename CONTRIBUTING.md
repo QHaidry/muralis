@@ -16,10 +16,12 @@ small wallpaper utility.
 ### Set up the development environment
 
 ```bash
-git clone https://github.com/quoxiom/muralis.git
+git clone https://github.com/QHaidry/muralis.git
 cd muralis
 python -m venv venv
 source venv/bin/activate
+# Gesso is not on PyPI yet; Muralis imports it at runtime.
+pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 pip install -e ".[dev]"
 pytest tests/
 ```
@@ -47,7 +49,7 @@ Before submitting a bug, please check the issue tracker. Use this template:
 #### System Information
 - OS: [Ubuntu 24.04]
 - Python: [3.12]
-- Muralis: [0.4.0]
+- Muralis: [0.5.0]
 - DE: [GNOME]
 ```
 
@@ -117,8 +119,8 @@ MIT License.
 
 ## Contact
 
-- GitHub: [Quoxiom](https://github.com/quoxiom)
-- Project: [quoxiom/muralis](https://github.com/quoxiom/muralis)
+- GitHub: [QHaidry](https://github.com/QHaidry)
+- Project: [QHaidry/muralis](https://github.com/QHaidry/muralis)
 
 ---
 

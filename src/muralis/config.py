@@ -21,11 +21,10 @@ from typing import Any, Dict, Iterator, List, Optional
 
 from gesso.config import ConfigError, ConfigStore, Option, Schema, Section
 
-from muralis.context import APP
+from muralis.context import APP, USER_AGENT
 from muralis.context import config_path as app_config_path
 from muralis.i18n import t
 from muralis.providers import ALL_PROVIDERS
-from muralis.providers.pexels import PexelsProvider
 
 
 class ConfigValidationError(Exception):
@@ -171,7 +170,7 @@ MURALIS_SCHEMA = Schema(
                 Option("proxy_url", str, "", "Proxy URL."),
                 Option("proxy_username", str, "", "Proxy username."),
                 Option("proxy_password", str, "", "Proxy password."),
-                Option("user_agent", str, "Muralis/1.0", "HTTP User-Agent."),
+                Option("user_agent", str, USER_AGENT, "HTTP User-Agent."),
                 Option("verify_ssl", bool, True, "Verify TLS certificates."),
                 Option("download_timeout", int, 30, "Download timeout, in seconds."),
                 Option("max_redirects", int, 5, "Maximum HTTP redirects."),
@@ -226,6 +225,21 @@ MURALIS_SCHEMA = Schema(
             ),
         ),
         Section(
+            "gui",
+            title="Interface",
+            options=(
+                # Kept in the schema rather than written as an ad-hoc key: an
+                # unlisted section is stored anyway, but `validate()` reports it
+                # as unknown on every run, which is noise a user cannot fix.
+                Option(
+                    "theme",
+                    str,
+                    "reasonix",
+                    "Colour palette to use.",
+                ),
+            ),
+        ),
+        Section(
             "api_keys",
             title="API keys",
             description=(
@@ -234,10 +248,10 @@ MURALIS_SCHEMA = Schema(
             ),
             options=(
                 Option("unsplash_key", str, "", "Unsplash access key."),
-                # Public demo key (rate-limited). Users should register their own
-                # at https://www.pexels.com/api and override with
-                # `muralis --set-key pexels ...`.
-                Option("pexels_key", str, PexelsProvider.API_KEY, "Pexels access key."),
+                # Pexels does not publish a demo key, so there is no usable
+                # default: register a free one at https://www.pexels.com/api
+                # and set it with `muralis --set-key pexels ...`.
+                Option("pexels_key", str, "", "Pexels access key."),
                 Option("flickr_key", str, "", "Flickr API key."),
                 Option("flickr_secret", str, "", "Flickr API secret."),
             ),
@@ -588,6 +602,10 @@ class ConfigManager:
     def get_download_dir(self) -> Path:
         return Path(self.get_str("storage", "download_dir", "~/Pictures/Muralis")).expanduser()
 
+    def get_theme(self) -> str:
+        """The theme id to start on (see :data:`muralis.gui.theme.DEFAULT_THEME`)."""
+        return self.get_str("gui", "theme", "reasonix")
+
     def get_log_file(self) -> Path:
         return Path(
             self.get_str("logging", "log_file", "~/.local/share/muralis/muralis.log")
@@ -628,17 +646,21 @@ class ConfigManager:
         print("=" * 60)
         for section, options in self._store.as_dict().items():
             print(f"\n[{section}]")
+            # ``options`` is already the section's mapping of key -> value; a
+            # nesting guard here would skip every setting and print bare
+            # section headers, which is what this used to do.
+            if not isinstance(options, dict):
+                continue
             for key, value in options.items():
-                if not isinstance(value, dict):
-                    continue
-                rendered = str(value)
-                if "key" in key or "password" in key or "secret" in key:
-                    if len(rendered) > 8:
-                        rendered = rendered[:4] + "..." + rendered[-4:]
-                    elif rendered:
-                        rendered = "***"
                 if isinstance(value, bool):
                     rendered = "✓" if value else "✗"
+                else:
+                    rendered = str(value)
+                    if "key" in key or "password" in key or "secret" in key:
+                        if len(rendered) > 8:
+                            rendered = rendered[:4] + "..." + rendered[-4:]
+                        elif rendered:
+                            rendered = "***"
                 print(f"  {key:25} = {rendered}")
         print("\n" + "=" * 60)
 

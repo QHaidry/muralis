@@ -1,7 +1,7 @@
 {
   "cli": {
     "description": "Muralis - Gestionnaire de fonds d'écran pour Linux",
-    "epilog": "Muralis - un petit utilitaire de fonds d'écran par Quoxiom",
+    "epilog": "Muralis - un petit utilitaire de fonds d'écran par Qamber Haidry",
     "help": {
       "gui": "Lancer l'interface graphique (identique à 'muralis-gui')",
       "config": "Chemin du fichier de configuration (défaut : ~/.config/muralis/config.json)",
@@ -83,7 +83,7 @@
       "instructions_line": "  muralis --get-key-instructions unsplash - Aide pour obtenir une clé",
       "bing": "Images quotidiennes Bing (4K/8K, aucune clé requise)",
       "nasa": "NASA APOD (aucune clé requise)",
-      "pexels": "Photos libres Pexels (clé de démonstration incluse)",
+      "pexels": "Photos libres Pexels (nécessite une clé API gratuite)",
       "wikimedia": "Wikimedia Commons (domaine public)",
       "artinstitute": "Art Institute of Chicago (art de musée)",
       "wallhaven": "Wallhaven.cc (art anime/jeux vidéo)",
@@ -91,7 +91,7 @@
     },
     "banner": {
       "title": "Muralis v{version} - Gestionnaire de fonds d'écran",
-      "part_of": "Muralis - un petit utilitaire de fonds d'écran par Quoxiom",
+      "part_of": "Muralis - un petit utilitaire de fonds d'écran par Qamber Haidry",
       "quick_start": "📌 DÉMARRAGE RAPIDE",
       "once_line": "  muralis --once                    Obtenir le fond d'écran du jour",
       "once_provider_line": "  muralis --once --provider nasa    Utiliser un fournisseur précis",
@@ -105,7 +105,7 @@
       "reset_line": "  muralis --reset-config            Réinitialiser",
       "export_line": "  muralis --export-config sauvegarde.json   Sauvegarder les réglages",
       "import_line": "  muralis --import-config sauvegarde.json    Restaurer les réglages",
-      "api_keys": "🔑 CLÉS API (pour Unsplash)",
+      "api_keys": "🔑 CLÉS API (pour Unsplash et Pexels)",
       "check_keys_line": "  muralis --check-keys              Vérifier l'état des clés API",
       "set_key_line": "  muralis --set-key unsplash VOTRE_CLE   Ajouter une clé Unsplash",
       "get_instructions_line": "  muralis --get-key-instructions unsplash   Aide pour obtenir une clé",
@@ -118,7 +118,7 @@
       "tips_verbose": "  • Utilisez --verbose pour la sortie de débogage",
       "docs": "📚 DOCUMENTATION COMPLÈTE",
       "docs_help_line": "  muralis --help                    Afficher cette aide",
-      "docs_url": "  https://github.com/quoxiom/muralis",
+      "docs_url": "  https://github.com/QHaidry/muralis",
       "set_image_line": "  muralis --set-image IMAGE       Définir une image de votre appareil",
       "get_image_line": "  muralis --get-image             Télécharger sans appliquer"
     },
@@ -148,14 +148,6 @@
     "effect_error": "Erreur lors de l'application de l'effet : {error}",
     "storage": {
       "cleaned": "{count} anciens fonds d'écran supprimés"
-    },
-    "unsplash": {
-      "requires_key": "\n⚠️  Unsplash nécessite une clé API",
-      "get_key": "   Obtenez votre clé gratuite sur : https://unsplash.com/developers",
-      "add_key": "   Puis ajoutez-la : muralis --set-key unsplash VOTRE_CLE\n",
-      "bad_format": "\n⚠️  Format de clé Unsplash invalide",
-      "format_hint": "   La clé doit comporter 32 caractères (lettres, chiffres, - et _)",
-      "format_fix": "   Exécutez : muralis --set-key unsplash VOTRE_BONNE_CLE\n"
     }
   },
   "gui": {
@@ -282,14 +274,14 @@
       "notifications": "Notifications"
     },
     "about": {
-      "desc": "Gestionnaire de fonds d'écran pour Linux.\nUn petit utilitaire de fonds d'écran par Quoxiom.",
+      "desc": "Gestionnaire de fonds d'écran pour Linux.\nUn petit utilitaire de fonds d'écran par Qamber Haidry.",
       "version": "Version {version}",
-      "github": "github.com/quoxiom/muralis",
+      "github": "github.com/QHaidry/muralis",
       "docs": "Documentation"
     },
     "dialog": {
       "about_title": "À propos de Muralis",
-      "about_html": "<h2>Muralis</h2><p>Gestionnaire de fonds d'écran pour Linux</p><p>Version {version}</p><p>Un petit utilitaire de fonds d'écran par Quoxiom</p><p>© 2026 Quoxiom (Qamber Haidry)</p><p><a href='https://github.com/quoxiom/muralis'>GitHub</a></p>",
+      "about_html": "<h2>Muralis</h2><p>Gestionnaire de fonds d'écran pour Linux</p><p>Version {version}</p><p>Un petit utilitaire de fonds d'écran par Qamber Haidry</p><p>© 2026 Qamber Haidry</p><p><a href='https://github.com/QHaidry/muralis'>GitHub</a></p>",
       "docs_title": "Documentation",
       "docs_text": "Veuillez visiter :\n{url}",
       "error_title": "Erreur",

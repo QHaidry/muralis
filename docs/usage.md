@@ -340,4 +340,4 @@ chmod +x ~/bin/muralis-random.sh
 
 ---
 
-**Muralis** — a small wallpaper utility by Quoxiom.
+**Muralis** — a small wallpaper utility by Qamber Haidry.

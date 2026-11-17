@@ -170,3 +170,13 @@ def test_choosing_a_format_converts_the_file(make_tab):
     assert tab.config_path.exists()
     # The previous file is kept, so changing your mind is a rename.
     assert (tab._test_config_file.parent / "config.json.bak").exists()
+
+
+def test_a_saved_theme_is_a_known_setting(make_tab):
+    """`gui.theme` must be in the schema, or `validate()` complains forever."""
+    tab = make_tab()
+    tab.save_settings()
+
+    config = ConfigManager(str(tab._test_config_file))
+    assert config.get_theme() == DEFAULT_THEME
+    assert config.validate() == []

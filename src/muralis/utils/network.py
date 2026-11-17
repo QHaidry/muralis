@@ -9,6 +9,8 @@ from typing import Optional, TYPE_CHECKING
 
 import requests
 
+from muralis.context import USER_AGENT
+
 if TYPE_CHECKING:
     from muralis.config import ConfigManager
 
@@ -36,7 +38,7 @@ def build_session(config: Optional["ConfigManager"] = None) -> requests.Session:
 
     session.headers.update(
         {
-            "User-Agent": config.get_str("networking", "user_agent", "Muralis/1.0"),
+            "User-Agent": config.get_str("networking", "user_agent", USER_AGENT),
         }
     )
     session.verify = config.get_bool("networking", "verify_ssl", True)

@@ -1,11 +1,13 @@
 """Unsplash wallpaper provider with API key support."""
 
-import requests
+import logging
 from typing import Dict, Optional
 
-from muralis.i18n import t
+import requests
 
 from .base import WallpaperProvider
+
+logger = logging.getLogger(__name__)
 
 
 class UnsplashProvider(WallpaperProvider):
@@ -29,16 +31,19 @@ class UnsplashProvider(WallpaperProvider):
         """Check if API key is configured."""
         key = self._get_api_key()
         if not key:
-            print(t("cli.unsplash.requires_key"))
-            print(t("cli.unsplash.get_key"))
-            print(t("cli.unsplash.add_key"))
+            logger.warning(
+                "Unsplash needs a free API key: register at "
+                "https://unsplash.com/developers and add it with "
+                "`muralis --set-key unsplash YOUR_KEY`."
+            )
             return False
 
         # Basic format validation
         if len(key) != 32 or not all(c.isalnum() or c in "-_" for c in key):
-            print(t("cli.unsplash.bad_format"))
-            print(t("cli.unsplash.format_hint"))
-            print(t("cli.unsplash.format_fix"))
+            logger.warning(
+                "Unsplash keys are 32 characters, letters/digits/-/_; update yours "
+                "with `muralis --set-key unsplash YOUR_KEY`."
+            )
             return False
 
         return True
@@ -72,24 +77,33 @@ class UnsplashProvider(WallpaperProvider):
 
             # Get the raw image URL (highest quality)
             urls = data.get("urls", {})
-            image_url = urls.get("raw") or urls.get("full") or urls.get("regular")
+            raw = urls.get("raw")
 
-            # Add resolution parameters to raw URL
-            if isinstance(image_url, str) and "raw" in image_url:
-                image_url = f"{image_url}&w={width}&h={height}&fit=crop"
-                return image_url
-            return image_url if isinstance(image_url, str) else None
+            # Unsplash's `raw` URL takes size parameters, but the URL does not
+            # contain the word "raw" — the old `"raw" in image_url` test never
+            # matched, so the requested resolution was silently ignored.
+            if isinstance(raw, str) and raw:
+                separator = "&" if "?" in raw else "?"
+                return f"{raw}{separator}w={width}&h={height}&fit=crop"
+
+            for size in ("full", "regular"):
+                candidate = urls.get(size)
+                if isinstance(candidate, str) and candidate:
+                    return candidate
+            return None
 
         except requests.exceptions.HTTPError as e:
             if e.response is not None and e.response.status_code == 401:
-                print(t("cli.err.invalid_key"))
-                print(t("cli.err.invalid_key_hint"))
-                print(t("cli.err.invalid_key_update"))
+                logger.error(
+                    "Unsplash rejected the API key (401). Check it with "
+                    "`muralis --check-keys` and replace it with "
+                    "`muralis --set-key unsplash YOUR_KEY`."
+                )
             else:
-                print(f"Error fetching Unsplash photo: {e}")
+                logger.error(f"Error fetching Unsplash photo: {e}")
             return None
         except Exception as e:
-            print(f"Error fetching Unsplash photo: {e}")
+            logger.error(f"Error fetching Unsplash photo: {e}")
             return None
 
     def get_metadata(self) -> Dict:
@@ -123,7 +137,7 @@ class UnsplashProvider(WallpaperProvider):
                 ),
             }
         except Exception as e:
-            print(f"Error fetching metadata: {e}")
+            logger.error(f"Error fetching Unsplash metadata: {e}")
             return {"title": "Unsplash Photo", "copyright": "Unsplash"}
 
     def get_available_resolutions(self) -> list:

@@ -32,19 +32,25 @@ __all__ = [
     "DEFAULT_WALLPAPER_DIR",
     "PACKAGE_DIR",
     "LOCALES_DIR",
+    "USER_AGENT",
     "context",
     "use_paths",
     "reset",
     "config_path",
     "user_themes_dir",
     "user_i18n_dir",
+    "systemd_user_dir",
+    "systemd_unit",
 ]
 
 #: Muralis's identity. Everything else in this module derives from it.
+#:
+#: There is deliberately no ``org``: Muralis is a personal project rather than
+#: a company product, and Gesso only calls ``setOrganizationName`` when this is
+#: set. Leaving it empty means Qt does not advertise a company it does not have.
 APP = AppSpec(
     name="Muralis",
     app_id="muralis",
-    org="Quoxiom",
     version=__version__,
     display_name="Muralis",
     description="Smart Wallpaper Manager for Linux",
@@ -102,3 +108,27 @@ def user_themes_dir() -> Path:
 def user_i18n_dir() -> Path:
     """Where the user's translation overrides live."""
     return context().paths.subdir("config", "i18n")
+
+
+def systemd_user_dir() -> Path:
+    """Where this user's systemd unit files live.
+
+    ``~/.config/systemd/user`` is a systemd convention rather than an XDG
+    application directory, so it is derived from the user's config home rather
+    than from the application id.
+    """
+    base = context().paths.config_home
+    return Path(base) / "systemd" / "user"
+
+
+def systemd_unit(name: str) -> Path:
+    """The path of Muralis's systemd unit called *name* (``muralis.timer``)."""
+    return systemd_user_dir() / name
+
+
+#: The HTTP User-Agent Muralis identifies itself with.
+#:
+#: Wikimedia Commons and the Art Institute both answer `python-requests/x.y`
+#: with 403 and ask for a descriptive agent with a project URL, so the version
+#: and the repository are part of the identity rather than an afterthought.
+USER_AGENT = f"{APP.name}/{__version__} (+https://github.com/QHaidry/muralis)"

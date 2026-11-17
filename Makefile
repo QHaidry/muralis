@@ -1,5 +1,5 @@
 # Muralis Makefile
-# Muralis - a small wallpaper utility by Quoxiom
+# Muralis - a small wallpaper utility by Qamber Haidry
 
 .PHONY: help install uninstall dev test clean run setup-service show-config \
         lint format coverage docs build release check \
@@ -17,7 +17,7 @@ NC := \033[0m # No Color
 help:
 	@echo "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 	@echo "${GREEN}Muralis - Smart Wallpaper Manager${NC}"
-	@echo "${BLUE}Muralis - a small wallpaper utility by Quoxiom${NC}"
+	@echo "${BLUE}Muralis - a small wallpaper utility by Qamber Haidry${NC}"
 	@echo "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 	@echo ""
 	@echo "${YELLOW}Installation & Management:${NC}"

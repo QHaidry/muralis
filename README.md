@@ -3,12 +3,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![Platform: Linux](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://www.linux.org)
-[![CI](https://github.com/quoxiom/muralis/actions/workflows/ci.yaml/badge.svg)](https://github.com/quoxiom/muralis/actions/workflows/ci.yaml)
-[![codecov](https://codecov.io/gh/quoxiom/muralis/branch/main/graph/badge.svg)](https://codecov.io/gh/quoxiom/muralis)
+[![CI](https://github.com/QHaidry/muralis/actions/workflows/ci.yaml/badge.svg)](https://github.com/QHaidry/muralis/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/QHaidry/muralis/branch/main/graph/badge.svg)](https://codecov.io/gh/QHaidry/muralis)
 
 > **Muralis** (Latin-inspired): *"Of the wall"* — bringing art to your desktop daily.
 
-**A small wallpaper utility by Quoxiom.**
+**A small wallpaper utility by Qamber Haidry.**
 
 Muralis fetches fresh wallpapers from multiple providers, applies optional
 image effects, and sets them on your Linux desktop — either once or
@@ -35,8 +35,13 @@ graphical interface (Qt/PySide6).
 
 ## Quick start
 
+Muralis is built on [Gesso](https://github.com/QHaidry/gesso), which supplies
+its application identity, configuration store, translations and Qt shell.
+Gesso is not on PyPI yet, so install it first:
+
 ```bash
-git clone https://github.com/quoxiom/muralis.git
+pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
+git clone https://github.com/QHaidry/muralis.git
 cd muralis
 python -m pip install -e .
 muralis --once          # fetch and set today's wallpaper
@@ -55,7 +60,8 @@ muralis-gui            # or: muralis -gui
 ### From source
 
 ```bash
-git clone https://github.com/quoxiom/muralis.git
+pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
+git clone https://github.com/QHaidry/muralis.git
 cd muralis
 pip install --user .
 ```
@@ -63,7 +69,8 @@ pip install --user .
 ### Using pipx (isolated)
 
 ```bash
-pipx install git+https://github.com/quoxiom/muralis.git
+pipx install git+https://github.com/QHaidry/muralis.git
+pipx inject muralis "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 ```
 
 ### Development setup
@@ -71,6 +78,7 @@ pipx install git+https://github.com/quoxiom/muralis.git
 ```bash
 python -m venv venv
 source venv/bin/activate
+pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 pip install -e ".[dev]"
 pytest tests/
 ```
@@ -252,8 +260,8 @@ make docs      # build the mkdocs site
 Contributions are welcome! This is a small hobby utility, so keep changes
 focused and friendly.
 
-- **Report bugs / request features** — open an [issue](https://github.com/quoxiom/muralis/issues).
-- **Submit code** — fork the repo, open a [pull request](https://github.com/quoxiom/muralis/pulls), and follow the [contributing guide](CONTRIBUTING.md).
+- **Report bugs / request features** — open an [issue](https://github.com/QHaidry/muralis/issues).
+- **Submit code** — fork the repo, open a [pull request](https://github.com/QHaidry/muralis/pulls), and follow the [contributing guide](CONTRIBUTING.md).
 - **Code style** — 100-column lines, `black` formatting, `flake8` clean, and
   type hints. Run `make test`, `make lint`, and `make format` before pushing.
 - **New providers** — implement `WallpaperProvider` and register it in
@@ -262,8 +270,8 @@ focused and friendly.
 
 ## License
 
-MIT License — Copyright (c) 2026 Quoxiom (Qamber Haidry).
+MIT License — Copyright (c) 2026 Qamber Haidry.
 
 ---
 
-**Muralis** — a small wallpaper utility by Quoxiom.
+**Muralis** — a small wallpaper utility by Qamber Haidry.

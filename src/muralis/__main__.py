@@ -109,8 +109,8 @@ def handle_config_commands(args, app):
         section_key = args.get[0]
         if "." in section_key:
             section, key = section_key.split(".", 1)
-            value = app.config.get(section, key)
-            if value:
+            value = app.config.get_optional(section, key)
+            if value is not None:
                 print(value)
             else:
                 print(t("cli.err.not_found", key=section_key), file=sys.stderr)

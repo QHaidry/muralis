@@ -1,6 +1,5 @@
 """Wallpaper preview widget for Muralis GUI."""
 
-from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -8,32 +7,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QResizeEvent
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSizePolicy
 
-from muralis.context import DEFAULT_WALLPAPER_DIR
 from muralis.i18n import t
 
-MODIFIED_TIME_FORMAT = "%d %b %Y %H:%M:%S"
+from . import support
 
 PREVIEW_SIZE = (800, 450)  # fallback for freshly-downloaded images without a saved size
-
-
-def _safe_mtime(path: Path) -> float:
-    try:
-        return path.stat().st_mtime
-    except OSError:
-        return 0.0
-
-
-def _provider_name() -> str:
-    """Localized label for the configured provider."""
-    provider = "bing"
-    try:
-        from .configview import config_view
-
-        provider = config_view().get("general", "provider", fallback="bing")
-    except Exception:
-        pass
-    localized = t(f"gui.provider.{provider}")
-    return provider if localized.startswith("gui.provider") else localized
 
 
 class PreviewWidget(QWidget):
@@ -87,13 +65,10 @@ class PreviewWidget(QWidget):
             print("No refresh callback set")
 
     def load_current_wallpaper(self):
-        wallpaper_dir = DEFAULT_WALLPAPER_DIR
-        if wallpaper_dir.exists():
-            wallpapers = list(wallpaper_dir.glob("muralis_*.jpg"))
-            if wallpapers:
-                latest = max(wallpapers, key=_safe_mtime)
-                self.display_wallpaper(latest)
-                return
+        wallpapers = support.list_wallpapers()
+        if wallpapers:
+            self.display_wallpaper(wallpapers[0])
+            return
         self._pixmap = None
         self.preview_label.setText(t("gui.preview.none_hint"))
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -105,10 +80,9 @@ class PreviewWidget(QWidget):
             self._pixmap = pixmap
             self._update_preview()
 
-            stat = image_path.stat()
-            size_kb = stat.st_size / 1024
-            downloaded = datetime.fromtimestamp(stat.st_mtime).strftime(MODIFIED_TIME_FORMAT)
-            provider = _provider_name()
+            size_kb = image_path.stat().st_size / 1024
+            downloaded = support.formatted_mtime(image_path)
+            provider = support.provider_name(support.configured_provider())
 
             # Name + rich details on hover, not as cluttering on-screen text.
             self._tooltip = (
@@ -146,9 +120,9 @@ class PreviewWidget(QWidget):
     def open_wallpaper_folder(self):
         import subprocess
 
-        wallpaper_dir = DEFAULT_WALLPAPER_DIR
-        wallpaper_dir.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["xdg-open", str(wallpaper_dir)])
+        folder = support.wallpaper_dir()
+        folder.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["xdg-open", str(folder)])
 
     def choose_local_image(self):
         """Open a file dialog and pass the chosen image to the application."""

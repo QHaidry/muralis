@@ -1,7 +1,7 @@
 site_name: Muralis
 site_description: "Smart Wallpaper Manager for Linux Desktops"
-site_author: Quoxiom
-repo_url: https://github.com/quoxiom/muralis
+site_author: Qamber Haidry
+repo_url: https://github.com/QHaidry/muralis
 edit_uri: ""
 
 theme:

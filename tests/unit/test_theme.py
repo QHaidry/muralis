@@ -216,3 +216,20 @@ def test_every_object_name_muralis_sets_is_styled(qapp, themes_dir):
     sheet = ThemeManager(qapp, themes_dir=themes_dir).stylesheet(DEFAULT_THEME)
     missing = sorted(name for name in names if f"#{name}" not in sheet)
     assert missing == [], f"these object names are not styled: {missing}"
+
+
+def test_the_config_defaults_to_the_shipped_theme(tmp_path):
+    """The schema's default and the GUI's DEFAULT_THEME must agree.
+
+    They live in different modules — the schema cannot import ``gui.theme``
+    without dragging PySide6 into every CLI run — so nothing but a test stops
+    the two literal values drifting apart.
+    """
+    from muralis.config import ConfigManager
+
+    ConfigManager.clear_cache()
+    try:
+        config = ConfigManager(str(tmp_path / "config.json"))
+        assert config.get_theme() == DEFAULT_THEME
+    finally:
+        ConfigManager.clear_cache()

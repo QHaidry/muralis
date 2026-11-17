@@ -1,8 +1,12 @@
 """Wallhaven.cc wallpaper provider."""
 
-from typing import Dict, Optional
+import logging
 from random import choice
+from typing import Dict, Optional
+
 from .base import WallpaperProvider
+
+logger = logging.getLogger(__name__)
 
 
 class WallhavenProvider(WallpaperProvider):
@@ -38,7 +42,7 @@ class WallhavenProvider(WallpaperProvider):
                 return url if isinstance(url, str) else None
             return None
         except Exception as e:
-            print(f"Error fetching Wallhaven wallpaper: {e}")
+            logger.error(f"Error fetching Wallhaven wallpaper: {e}")
             return None
 
     def get_metadata(self) -> Dict:

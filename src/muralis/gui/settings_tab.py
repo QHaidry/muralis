@@ -36,11 +36,14 @@ from .theme import DEFAULT_THEME
 
 PROVIDERS: List[Tuple[str, str]] = [(key, f"gui.provider.{key}") for key in ALL_PROVIDERS]
 
+# Labels describe the *pixel* size, which is the only thing the config stores:
+# 3840x2160 is 4K UHD, and 4096x2160 is DCI 4K — labelling them "2.5K" and
+# "4K" respectively made the two best options indistinguishable.
 RESOLUTIONS = [
-    ("FHD", "1920x1080"),
-    ("2K", "2560x1440"),
-    ("2.5K", "3840x2160"),
-    ("4K", "4096x2160"),
+    ("1080p", "1920x1080"),
+    ("1440p", "2560x1440"),
+    ("4K", "3840x2160"),
+    ("DCI 4K", "4096x2160"),
     ("8K", "7680x4320"),
 ]
 EFFECTS = ["none", "blur", "darken", "grayscale", "vibrant", "vignette"]
@@ -716,13 +719,16 @@ class SettingsTab(QWidget):
         if "general" not in config:
             config["general"] = {}
         config["general"]["provider"] = self._checked_value(self.provider_buttons, "bing")
-        config["general"]["auto_update"] = str(self.auto_update_toggle.isChecked()).lower()
-        config["general"]["randomize_provider"] = str(self.randomize_toggle.isChecked()).lower()
+        # The store is typed: a bool goes in as a bool, and comes back out as a
+        # bool in JSON, TOML and YAML alike. Writing "false" worked only because
+        # the store coerced it, and it is what made a second file format break.
+        config["general"]["auto_update"] = self.auto_update_toggle.isChecked()
+        config["general"]["randomize_provider"] = self.randomize_toggle.isChecked()
 
         # Notifications section
         if "notifications" not in config:
             config["notifications"] = {}
-        config["notifications"]["enabled"] = str(self.notifications_toggle.isChecked()).lower()
+        config["notifications"]["enabled"] = self.notifications_toggle.isChecked()
 
         # Scheduling (automatic update time)
         if "scheduling" not in config:
@@ -733,15 +739,15 @@ class SettingsTab(QWidget):
         if "image" not in config:
             config["image"] = {}
         config["image"]["resolution"] = self._checked_value(self.resolution_buttons, "3840x2160")
-        config["image"]["apply_effects"] = str(self.effects_toggle.isChecked()).lower()
+        config["image"]["apply_effects"] = self.effects_toggle.isChecked()
         config["image"]["effect_type"] = self._checked_value(self.effect_buttons, "none")
 
         # Storage section
         if "storage" not in config:
             config["storage"] = {}
-        config["storage"]["save_downloads"] = str(self.save_downloads_toggle.isChecked()).lower()
-        config["storage"]["max_files"] = str(self.max_files_spin.value())
-        config["storage"]["max_days"] = str(self.max_days_spin.value())
+        config["storage"]["save_downloads"] = self.save_downloads_toggle.isChecked()
+        config["storage"]["max_files"] = self.max_files_spin.value()
+        config["storage"]["max_days"] = self.max_days_spin.value()
 
         # Appearance section
         if "gui" not in config:

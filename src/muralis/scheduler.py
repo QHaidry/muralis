@@ -1,32 +1,35 @@
 """Scheduler management for Muralis auto-updates."""
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
+from muralis.context import systemd_unit
 from muralis.i18n import t
 
 SYSTEMD_SERVICE_TEMPLATE = """[Unit]
 Description=Muralis - Daily Wallpaper Update
-Documentation=https://github.com/quoxiom/muralis
+Documentation=https://github.com/QHaidry/muralis
 After=network.target
 
 [Service]
 Type=oneshot
 ExecStart={script_path} --once
-User={user}
 Environment="DISPLAY=:0"
 Environment="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus"
 StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+# A *user* unit is pulled in by default.target. The system-wide target is never
+# reached by `systemctl --user`, so enabling the timer against it did nothing.
+WantedBy=default.target
 """
 
 SYSTEMD_TIMER_TEMPLATE = """[Unit]
 Description=Muralis Daily Wallpaper Timer
-Documentation=https://github.com/quoxiom/muralis
+Documentation=https://github.com/QHaidry/muralis
 Requires=muralis.service
 
 [Timer]
@@ -64,8 +67,8 @@ class SchedulerManager:
         """Remove the background daily timer/job (systemd first, then cron)."""
         removed = False
         # systemd user timer
-        timer_path = Path.home() / ".config/systemd/user/muralis.timer"
-        service_path = Path.home() / ".config/systemd/user/muralis.service"
+        timer_path = systemd_unit("muralis.timer")
+        service_path = systemd_unit("muralis.service")
         if timer_path.exists() or service_path.exists():
             try:
                 subprocess.run(
@@ -114,22 +117,19 @@ class SchedulerManager:
             # Find script path
             script_path = self._get_script_path()
 
-            user = subprocess.check_output(["whoami"], text=True).strip()
             uid = subprocess.check_output(["id", "-u"], text=True).strip()
 
             # Create service file
-            service_content = SYSTEMD_SERVICE_TEMPLATE.format(
-                script_path=script_path, user=user, uid=uid
-            )
+            service_content = SYSTEMD_SERVICE_TEMPLATE.format(script_path=script_path, uid=uid)
 
-            service_path = Path.home() / ".config/systemd/user/muralis.service"
+            service_path = systemd_unit("muralis.service")
             service_path.parent.mkdir(parents=True, exist_ok=True)
             service_path.write_text(service_content)
 
             # Create timer file (uses the configured update time)
             hour, minute = self._hour_minute()
             timer_content = SYSTEMD_TIMER_TEMPLATE.format(time=f"{hour:02d}:{minute:02d}")
-            timer_path = Path.home() / ".config/systemd/user/muralis.timer"
+            timer_path = systemd_unit("muralis.timer")
             timer_path.write_text(timer_content)
 
             # Enable and start timer
@@ -175,16 +175,18 @@ class SchedulerManager:
             return False
 
     def _get_script_path(self) -> str:
-        """Get path to muralis script."""
-        # Check common locations
-        possible_paths = [
-            str(Path(sys.argv[0]).absolute()),
-            str(Path.home() / ".local/bin/muralis"),
-            "/usr/local/bin/muralis",
-            "/usr/bin/muralis",
-        ]
+        """The ``muralis`` executable to put in the unit's ``ExecStart``.
 
-        for path in possible_paths:
+        Looking for the console script on ``PATH`` rather than hard-coding
+        install locations is what makes a virtualenv, a ``pipx`` install and a
+        distro package all work; ``sys.argv[0]`` is only a last resort for the
+        case where Muralis is running from a source checkout.
+        """
+        found = shutil.which("muralis")
+        if found:
+            return str(Path(found).absolute())
+
+        for path in ("/usr/local/bin/muralis", "/usr/bin/muralis"):
             if Path(path).exists():
                 return path
 
