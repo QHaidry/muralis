@@ -707,10 +707,6 @@ sudo<span class="w"> </span>pacman<span class="w"> </span>-S<span class="w"> </s
 <p>The package is published on PyPI. For the command-line interface:</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>muralis
 </code></pre></div>
-<p>Muralis needs <a href="https://github.com/QHaidry/gesso">Gesso</a>, which is not on PyPI
-yet — install it before anything else:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"gesso-sdk @ git+https://github.com/QHaidry/gesso@main"</span>
-</code></pre></div>
 <p>To add the graphical interface:</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"muralis[gui]"</span>
 </code></pre></div>
@@ -719,15 +715,13 @@ yet — install it before anything else:</p>
 <span class="nb">cd</span><span class="w"> </span>muralis
 python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
 <span class="nb">source</span><span class="w"> </span>venv/bin/activate
-pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"gesso-sdk @ git+https://github.com/QHaidry/gesso@main"</span>
 pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
 
 <span class="c1"># Run the test suite</span>
 pytest<span class="w"> </span>tests/
 </code></pre></div>
 <h3 id="method-3-using-pipx-isolated">Method 3 — using pipx (isolated)</h3>
-<div class="highlight"><pre><span></span><code>pipx<span class="w"> </span>install<span class="w"> </span>git+https://github.com/QHaidry/muralis.git
-pipx<span class="w"> </span>inject<span class="w"> </span>muralis<span class="w"> </span><span class="s2">"gesso-sdk @ git+https://github.com/QHaidry/gesso@main"</span>
+<div class="highlight"><pre><span></span><code>pipx<span class="w"> </span>install<span class="w"> </span><span class="s2">"muralis[gui]"</span>
 muralis<span class="w"> </span>--once
 </code></pre></div>
 <h3 id="method-4-automated-install-script">Method 4 — automated install script</h3>
