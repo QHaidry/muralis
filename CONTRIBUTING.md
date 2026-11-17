@@ -20,8 +20,6 @@ git clone https://github.com/QHaidry/muralis.git
 cd muralis
 python -m venv venv
 source venv/bin/activate
-# Gesso is not on PyPI yet; Muralis imports it at runtime.
-pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 pip install -e ".[dev]"
 pytest tests/
 ```

@@ -44,13 +44,6 @@ The package is published on PyPI. For the command-line interface:
 pip install muralis
 ```
 
-Muralis needs [Gesso](https://github.com/QHaidry/gesso), which is not on PyPI
-yet — install it before anything else:
-
-```bash
-pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
-```
-
 To add the graphical interface:
 
 ```bash
@@ -64,7 +57,6 @@ git clone https://github.com/QHaidry/muralis.git
 cd muralis
 python -m venv venv
 source venv/bin/activate
-pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 pip install -e ".[dev]"
 
 # Run the test suite
@@ -74,8 +66,7 @@ pytest tests/
 ### Method 3 — using pipx (isolated)
 
 ```bash
-pipx install git+https://github.com/QHaidry/muralis.git
-pipx inject muralis "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
+pipx install "muralis[gui]"
 muralis --once
 ```
 

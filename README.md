@@ -35,15 +35,8 @@ graphical interface (Qt/PySide6).
 
 ## Quick start
 
-Muralis is built on [Gesso](https://github.com/QHaidry/gesso), which supplies
-its application identity, configuration store, translations and Qt shell.
-Gesso is not on PyPI yet, so install it first:
-
 ```bash
-pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
-git clone https://github.com/QHaidry/muralis.git
-cd muralis
-python -m pip install -e .
+pip install muralis
 muralis --once          # fetch and set today's wallpaper
 muralis --set-daily     # enable automatic daily updates
 ```
@@ -51,16 +44,20 @@ muralis --set-daily     # enable automatic daily updates
 For the graphical interface:
 
 ```bash
-pip install -e ".[gui]"
+pip install "muralis[gui]"
 muralis-gui            # or: muralis -gui
 ```
+
+Muralis is built on [Gesso](https://github.com/QHaidry/gesso)
+(`pip install gesso-sdk`), which supplies its application identity,
+configuration store, translations and Qt shell. It is declared as an ordinary
+dependency, so installing Muralis brings it in.
 
 ## Installation
 
 ### From source
 
 ```bash
-pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 git clone https://github.com/QHaidry/muralis.git
 cd muralis
 pip install --user .
@@ -69,8 +66,7 @@ pip install --user .
 ### Using pipx (isolated)
 
 ```bash
-pipx install git+https://github.com/QHaidry/muralis.git
-pipx inject muralis "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
+pipx install "muralis[gui]"
 ```
 
 ### Development setup
@@ -78,7 +74,6 @@ pipx inject muralis "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install "gesso-sdk @ git+https://github.com/QHaidry/gesso@main"
 pip install -e ".[dev]"
 pytest tests/
 ```
